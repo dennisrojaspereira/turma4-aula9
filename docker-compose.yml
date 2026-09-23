@@ -66,6 +66,8 @@ services:
       KAFKA_BOOTSTRAP: kafka:9092
       TECHPIX_EVENTS_ENABLED: ${TECHPIX_EVENTS_ENABLED:-true}
       TECHPIX_FRAUD_PROFILE: ${TECHPIX_FRAUD_PROFILE:-SIMPLE}
+      # Lab 20: TECHPIX_LEDGER_FAIL_AMOUNT=13.37 faz o ledger falhar para esse valor (demo da compensacao)
+      TECHPIX_LEDGER_FAIL_AMOUNT: ${TECHPIX_LEDGER_FAIL_AMOUNT:-}
       TECHPIX_FRAUD_MODE: ${TECHPIX_FRAUD_MODE:-LEGACY}
       # Dentro da rede do compose, o nome do servico e o endereco. Sem IP. (Service discovery do Docker, lab 10.)
       TECHPIX_FRAUD_SERVICE_URL: http://fraud-service:8081
