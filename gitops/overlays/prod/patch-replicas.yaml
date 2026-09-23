@@ -1,0 +1,14 @@
+# Em producao real: monolith 5, fraud-service 30. No laboratorio, a proporcao: 2 e 4 (o HPA vai ate 6).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: monolith
+spec:
+  replicas: 2
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fraud-service
+spec:
+  replicas: 4

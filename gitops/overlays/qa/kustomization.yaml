@@ -1,0 +1,11 @@
+# QA: parecido com producao em forma; canary em 10% para validar o Fraud Service com efeito real.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: techpix-qa
+resources:
+  - namespace.yaml
+  - ../../base
+patches:
+  - path: patch-replicas.yaml
+  - path: patch-config.yaml
+  - path: patch-nodeports.yaml

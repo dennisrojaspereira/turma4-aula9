@@ -1,0 +1,12 @@
+# PROD: mais replicas, HPA ligado, canary em 1%. Nada aqui e alterado por kubectl: so por commit.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: techpix-prod
+resources:
+  - namespace.yaml
+  - ../../base
+  - hpa.yaml
+patches:
+  - path: patch-replicas.yaml
+  - path: patch-config.yaml
+  - path: patch-nodeports.yaml

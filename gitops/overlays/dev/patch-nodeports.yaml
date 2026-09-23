@@ -1,0 +1,20 @@
+# Cada ambiente em portas diferentes da maquina (ver kubernetes/kind-config.yaml): dev = 8090/8091.
+apiVersion: v1
+kind: Service
+metadata:
+  name: monolith
+spec:
+  ports:
+    - port: 8080
+      targetPort: 8080
+      nodePort: 30080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: fraud-service
+spec:
+  ports:
+    - port: 8081
+      targetPort: 8081
+      nodePort: 30081

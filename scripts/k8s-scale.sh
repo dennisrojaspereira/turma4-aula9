@@ -8,7 +8,7 @@ cd "$(dirname "$0")/.."
 NS="-n techpix"
 case "${1:-}" in
   hpa)
-    kubectl $NS apply -f kubernetes/fraud-service/hpa.yaml
+    kubectl $NS apply -f kubernetes/hpa.yaml
     kubectl $NS get hpa
     ;;
   watch)

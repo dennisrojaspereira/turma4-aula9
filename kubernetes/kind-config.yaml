@@ -1,12 +1,23 @@
-# Cluster local para o laboratorio. Um unico node. As portas 8090/8091 da maquina
-# apontam para os NodePorts do monolito e do Fraud Service.
+# Cluster local para o laboratorio. Um unico node.
+# Portas da maquina -> NodePorts: cada ambiente GitOps tem as suas (lab 16).
+#   raw / dev   8090 monolith, 8091 fraud-service
+#   qa          8092 monolith, 8093 fraud-service
+#   prod        8094 monolith, 8095 fraud-service
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
 name: techpix
 nodes:
   - role: control-plane
     extraPortMappings:
-      - containerPort: 30080   # monolith
+      - containerPort: 30080
         hostPort: 8090
-      - containerPort: 30081   # fraud-service (so para inspecionar; Payment nao usa esta porta)
+      - containerPort: 30081
         hostPort: 8091
+      - containerPort: 30082
+        hostPort: 8092
+      - containerPort: 30083
+        hostPort: 8093
+      - containerPort: 30084
+        hostPort: 8094
+      - containerPort: 30085
+        hostPort: 8095

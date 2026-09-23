@@ -1,0 +1,22 @@
+# Argo CD Application: "o namespace techpix-dev deve ser igual a gitops/overlays/dev deste repositorio".
+# Automated + selfHeal: se alguem mudar o cluster na mao, o Argo CD desfaz. Prune: o que sair do Git sai do cluster.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: techpix-dev
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: ${TECHPIX_GIT_URL}
+    targetRevision: main
+    path: gitops/overlays/dev
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: techpix-dev
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

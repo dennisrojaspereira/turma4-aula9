@@ -46,6 +46,8 @@ Os laboratórios em [docs/labs/](docs/labs/) seguem a evolução do sistema. Cad
 | [13 — Branch by Abstraction + Feature Flag](docs/labs/13-feature-flags.md) | `aula07-step-09-feature-flag-parallel-run` |
 | [14 — Parallel Run](docs/labs/14-parallel-run.md) | `aula07-step-09-feature-flag-parallel-run` |
 | [15 — Canary](docs/labs/15-canary.md) | `aula07-step-10-canary` |
+| [16 — Configuração dos ambientes e GitOps](docs/labs/16-gitops.md) | `aula07-step-11-gitops-argocd` |
+| [17 — Argo CD: reconciliação](docs/labs/17-argocd.md) | `aula07-step-11-gitops-argocd` |
 
 ## Decisões
 

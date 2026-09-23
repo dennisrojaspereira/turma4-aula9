@@ -28,18 +28,19 @@ kubectl -n kube-system patch deployment metrics-server --type=json \
 
 echo "== aplicando manifests ($SOURCE)"
 case "$SOURCE" in
-  raw)    kubectl apply -k kubernetes/ ;;
-  gitops) kubectl apply -k "gitops/overlays/$OVERLAY" ;;
+  raw)    kubectl apply -k kubernetes/; NS=techpix; PORT=8090 ;;
+  gitops) kubectl apply -k "gitops/overlays/$OVERLAY"; NS="techpix-$OVERLAY"
+          case "$OVERLAY" in dev) PORT=8090 ;; qa) PORT=8092 ;; prod) PORT=8094 ;; esac ;;
   *) echo "uso: $0 [raw|gitops [dev|qa|prod]]"; exit 1 ;;
 esac
 
-echo "== aguardando rollout"
-kubectl -n techpix rollout status deployment/postgres --timeout=120s
-kubectl -n techpix rollout status deployment/monolith --timeout=300s
-kubectl -n techpix rollout status deployment/fraud-service --timeout=300s
+echo "== aguardando rollout (namespace $NS)"
+kubectl -n "$NS" rollout status deployment/postgres --timeout=120s
+kubectl -n "$NS" rollout status deployment/monolith --timeout=300s
+kubectl -n "$NS" rollout status deployment/fraud-service --timeout=300s
 
 echo
-kubectl -n techpix get pods -o wide
+kubectl -n "$NS" get pods -o wide
 echo
-echo "Monolito:      http://localhost:8090   (TECHPIX_URL=http://localhost:8090 scripts/demo-payment.sh)"
-echo "Fraud Service: http://localhost:8091/actuator/health/readiness"
+echo "Monolito:      http://localhost:$PORT   (TECHPIX_URL=http://localhost:$PORT scripts/demo-payment.sh)"
+echo "Fraud Service: http://localhost:$((PORT+1))/actuator/health/readiness"

@@ -1,0 +1,30 @@
+# Aplicado separadamente (lab 11), DEPOIS de explicar a metrica:
+#   kubectl apply -n techpix -f kubernetes/fraud-service/hpa.yaml
+#
+#   workload (avaliacoes/s) -> metrica (CPU do Pod, via metrics-server) -> threshold (60% do request) -> scaling decision
+#
+# Utilizacao = uso de CPU / request de CPU. Com request=250m, 60% = 150m por Pod.
+# Se a media dos Pods passar disso, o HPA adiciona replicas ate maxReplicas.
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: fraud-service
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: fraud-service
+  minReplicas: 2
+  maxReplicas: 6
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 60
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 0
+    scaleDown:
+      stabilizationWindowSeconds: 60   # nao derruba replicas no primeiro segundo de calmaria

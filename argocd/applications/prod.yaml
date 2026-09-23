@@ -1,0 +1,19 @@
+# PROD: sem sync automatico. O Argo CD mostra "OutOfSync" e alguem aprova (botao Sync ou argocd app sync).
+# E uma escolha: em prod, a reconciliacao e visivel e deliberada. O drift continua sendo detectado.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: techpix-prod
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: ${TECHPIX_GIT_URL}
+    targetRevision: main
+    path: gitops/overlays/prod
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: techpix-prod
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true

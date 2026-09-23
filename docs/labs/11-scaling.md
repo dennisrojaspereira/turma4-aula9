@@ -63,7 +63,7 @@ threshold          60% do request (250m) = 150m por Pod, em media
 scaling decision   media acima -> mais Pods, ate 6. Media abaixo por 60s -> menos Pods, ate 2.
 ```
 
-[fraud-service/hpa.yaml](../../kubernetes/fraud-service/hpa.yaml):
+[fraud-service/hpa.yaml](../../kubernetes/hpa.yaml):
 
 ```bash
 scripts/k8s-scale.sh hpa

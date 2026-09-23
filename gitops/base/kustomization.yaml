@@ -1,0 +1,17 @@
+# A base: o que e igual em todos os ambientes. Sem namespace, sem replicas "de producao", sem flag ligada.
+# Cada overlay (dev/qa/prod) aplica suas diferencas por cima. Git = desired state.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - postgres/deployment.yaml
+  - postgres/service.yaml
+  - monolith/configmap.yaml
+  - monolith/secret.yaml
+  - monolith/deployment.yaml
+  - monolith/service.yaml
+  - fraud-service/configmap.yaml
+  - fraud-service/deployment.yaml
+  - fraud-service/service.yaml
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: techpix

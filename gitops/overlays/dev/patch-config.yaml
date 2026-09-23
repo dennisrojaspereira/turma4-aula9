@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: monolith-config
+data:
+  TECHPIX_FRAUD_MODE: PARALLEL
+  TECHPIX_FRAUD_CANARY_PERCENTAGE: "0"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fraud-service-config
+data:
+  FRAUD_WARMUP_SECONDS: "5"

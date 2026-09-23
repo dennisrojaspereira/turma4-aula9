@@ -25,12 +25,16 @@ kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/late
 kubectl -n kube-system patch deployment metrics-server --type=json -p '[{"op":"add","path":"/spec/template/spec/containers/0/args/-","value":"--kubelet-insecure-tls"}]' 2>$null | Out-Null
 
 Write-Host "== aplicando manifests ($Source)"
-if ($Source -eq "raw") { kubectl apply -k kubernetes/ } else { kubectl apply -k "gitops/overlays/$Overlay" }
+if ($Source -eq "raw") { kubectl apply -k kubernetes/; $ns = "techpix"; $port = 8090 }
+else {
+    kubectl apply -k "gitops/overlays/$Overlay"; $ns = "techpix-$Overlay"
+    $port = switch ($Overlay) { "dev" { 8090 } "qa" { 8092 } "prod" { 8094 } }
+}
 
-kubectl -n techpix rollout status deployment/postgres --timeout=120s
-kubectl -n techpix rollout status deployment/monolith --timeout=300s
-kubectl -n techpix rollout status deployment/fraud-service --timeout=300s
-kubectl -n techpix get pods -o wide
+kubectl -n $ns rollout status deployment/postgres --timeout=120s
+kubectl -n $ns rollout status deployment/monolith --timeout=300s
+kubectl -n $ns rollout status deployment/fraud-service --timeout=300s
+kubectl -n $ns get pods -o wide
 Write-Host ""
-Write-Host "Monolito:      http://localhost:8090"
-Write-Host "Fraud Service: http://localhost:8091/actuator/health/readiness"
+Write-Host "Monolito:      http://localhost:$port"
+Write-Host "Fraud Service: http://localhost:$($port + 1)/actuator/health/readiness"
