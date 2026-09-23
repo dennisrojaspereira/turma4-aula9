@@ -1,6 +1,7 @@
 package com.techpix.payment;
 
 import com.techpix.payment.internal.PaymentRepository;
+import com.techpix.payment.internal.events.PaymentEventPublisher;
 import com.techpix.account.Account;
 import com.techpix.account.AccountService;
 import com.techpix.fraud.FraudCheck;
@@ -59,19 +60,21 @@ public class PaymentService {
     private final LedgerService ledger;
     private final NotificationService notifications;
     private final Clock clock;
+    private final PaymentEventPublisher events;
     private final TransactionTemplate tx;
     private final Timer paymentTimer;
     private final DistributionSummary paymentQueries;
 
     public PaymentService(PaymentRepository payments, AccountService accounts, FraudEvaluator fraud,
                           LedgerService ledger, NotificationService notifications, Clock clock,
-                          PlatformTransactionManager transactionManager, MeterRegistry metrics) {
+                          PaymentEventPublisher events, PlatformTransactionManager transactionManager, MeterRegistry metrics) {
         this.payments = payments;
         this.accounts = accounts;
         this.fraud = fraud;
         this.ledger = ledger;
         this.notifications = notifications;
         this.clock = clock;
+        this.events = events;
         this.tx = new TransactionTemplate(transactionManager);
         this.paymentTimer = Timer.builder("payment.create").description("Tempo total de POST /payments").register(metrics);
         this.paymentQueries = DistributionSummary.builder("payment.queries")
@@ -100,6 +103,11 @@ public class PaymentService {
 
         // Fase 3: transação curta. Liquida ou rejeita.
         Payment stored = tx.execute(status -> result.rejected() ? reject(payment, result) : settle(payment));
+
+        // Fase 4: conta ao mundo o que aconteceu. Depois do commit: um fato só é publicado se for verdade.
+        events.publish(PaymentEvent.of(
+                stored.status() == PaymentStatus.APPROVED ? PaymentEvent.Type.PaymentApproved : PaymentEvent.Type.PaymentRejected,
+                stored, accounts.get(stored.payerAccountId()).createdAt()));
 
         long totalMs = (System.nanoTime() - start) / 1_000_000;
         long queries = QueryCounter.current();

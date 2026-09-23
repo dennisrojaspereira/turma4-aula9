@@ -44,6 +44,20 @@ public abstract class AbstractFraudStoreIT {
     @Autowired
     protected JdbcClient jdbc;
 
+
+    /**
+     * A regra external-provider e deterministica pelo hash do destinatario (~5% recebem +20).
+     * Para testes previsiveis, escolhemos destinatarios fora dessa faixa.
+     */
+    protected static UUID quietPayee() {
+        while (true) {
+            UUID id = UUID.randomUUID();
+            if (Math.floorMod(id.hashCode(), 100) >= 5) {
+                return id;
+            }
+        }
+    }
+
     protected ResponseEntity<Map> evaluate(UUID payer, UUID payee, String amount, String device, Instant at) {
         return http.postForEntity("/fraud/evaluations", Map.of(
                 "paymentId", UUID.randomUUID(), "payerAccountId", payer, "payeeAccountId", payee,

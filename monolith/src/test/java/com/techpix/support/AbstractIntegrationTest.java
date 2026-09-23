@@ -37,10 +37,19 @@ public abstract class AbstractIntegrationTest {
     @Autowired
     protected TestRestTemplate http;
 
+    /**
+     * Abre uma conta cujo id nao dispara a regra external-provider (deterministica pelo hash do
+     * destinatario, ~5% dos ids). Sem isto, um em cada vinte testes ganharia +20 pontos "do nada".
+     */
     protected UUID openAccount(String owner, String balance) {
-        ResponseEntity<Map> response = http.postForEntity("/accounts",
-                Map.of("ownerName", owner, "initialBalance", new BigDecimal(balance)), Map.class);
-        return UUID.fromString((String) response.getBody().get("id"));
+        while (true) {
+            ResponseEntity<Map> response = http.postForEntity("/accounts",
+                    Map.of("ownerName", owner, "initialBalance", new BigDecimal(balance)), Map.class);
+            UUID id = UUID.fromString((String) response.getBody().get("id"));
+            if (Math.floorMod(id.hashCode(), 100) >= 5) {
+                return id;
+            }
+        }
     }
 
     protected ResponseEntity<Map> pay(UUID payer, UUID payee, String amount, String deviceId) {

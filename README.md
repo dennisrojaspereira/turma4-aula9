@@ -49,6 +49,7 @@ Os laboratórios em [docs/labs/](docs/labs/) seguem a evolução do sistema. Cad
 | [16 — Configuração dos ambientes e GitOps](docs/labs/16-gitops.md) | `aula07-step-11-gitops-argocd` |
 | [17 — Argo CD: reconciliação](docs/labs/17-argocd.md) | `aula07-step-11-gitops-argocd` |
 | [18 — Shared Database e Database per Service](docs/labs/18-database-per-service.md) | `aula07-step-12-database-per-service` |
+| [19 — Kafka: o JOIN virou evento](docs/labs/19-kafka.md) | `aula07-step-13-kafka` |
 
 ## Decisões
 

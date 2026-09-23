@@ -3,6 +3,7 @@ package com.techpix.fraudservice.api;
 import com.techpix.fraudservice.domain.PaymentFacts;
 import com.techpix.fraudservice.domain.RiskAssessment;
 import com.techpix.fraudservice.domain.RiskEngine;
+import com.techpix.fraudservice.history.LocalViewUpdater;
 import com.techpix.fraudservice.persistence.EvaluationStore;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
@@ -16,6 +17,7 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -52,12 +54,15 @@ public class FraudEvaluationController {
 
     private final RiskEngine engine;
     private final EvaluationStore store;
+    private final ObjectProvider<LocalViewUpdater> localView;
     private final Clock clock;
     private final Timer evaluationTimer;
 
-    public FraudEvaluationController(RiskEngine engine, EvaluationStore store, Clock clock, MeterRegistry metrics) {
+    public FraudEvaluationController(RiskEngine engine, EvaluationStore store, ObjectProvider<LocalViewUpdater> localView,
+                                     Clock clock, MeterRegistry metrics) {
         this.engine = engine;
         this.store = store;
+        this.localView = localView;
         this.clock = clock;
         this.evaluationTimer = Timer.builder("fraud.evaluation").description("Tempo de avaliacao no Fraud Service").register(metrics);
     }
@@ -69,6 +74,8 @@ public class FraudEvaluationController {
         PaymentFacts facts = new PaymentFacts(request.paymentId(), request.payerAccountId(), request.payeeAccountId(),
                 request.amount(), request.deviceId(), at);
 
+        // Visao local (etapa 12+): Fraud registra que este pagamento existe ANTES de qualquer evento chegar.
+        localView.ifAvailable(view -> view.recordEvaluated(facts));
         RiskAssessment assessment = engine.assess(facts);
 
         long durationMs = (System.nanoTime() - start) / 1_000_000;

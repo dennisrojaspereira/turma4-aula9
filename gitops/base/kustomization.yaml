@@ -6,6 +6,8 @@ resources:
   - postgres/init-configmap.yaml
   - postgres/deployment.yaml
   - postgres/service.yaml
+  - kafka/deployment.yaml
+  - kafka/service.yaml
   - monolith/configmap.yaml
   - monolith/secret.yaml
   - monolith/deployment.yaml

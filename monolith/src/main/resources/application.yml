@@ -10,6 +10,15 @@ spring:
   flyway:
     enabled: true
 
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      acks: all
+      properties:
+        spring.json.add.type.headers: false
+
 server:
   port: ${SERVER_PORT:8080}
   tomcat:
@@ -36,6 +45,9 @@ management:
         fraud.rule: 0.5,0.95
 
 techpix:
+  events:
+    # Lab 19: publica PaymentApproved/PaymentRejected no Kafka. Desligado, os eventos viram log.
+    enabled: ${TECHPIX_EVENTS_ENABLED:false}
   fraud:
     reject-threshold: 70
     # SIMPLE = a Tech Pix do inicio (5 regras). HEAVY = depois do crescimento (17 regras).

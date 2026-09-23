@@ -13,6 +13,18 @@ spring:
     # Ligado: o schema de fraud_db pertence ao Fraud Service. Desligado na etapa 8, quando o schema era do monolito.
     enabled: ${FRAUD_FLYWAY_ENABLED:true}
 
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP:localhost:9092}
+    consumer:
+      group-id: fraud-service
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
+        spring.json.value.default.type: com.techpix.fraudservice.messaging.PaymentEventMessage
+        spring.json.use.type.headers: false
+
 server:
   port: ${SERVER_PORT:8081}
   tomcat:
@@ -51,6 +63,12 @@ fraud:
   # LOCAL_VIEW: historico vem de payment_history (fraud_db). LEGACY_SCHEMA: le payments do banco do monolito (etapa 8).
   history-source: ${FRAUD_HISTORY_SOURCE:LOCAL_VIEW}
   blacklist-refresh-ms: 30000
+  events:
+    # Lab 19: consome payment-events e alimenta a visao local. Exige Kafka.
+    enabled: ${FRAUD_EVENTS_ENABLED:false}
+  idempotency:
+    # Lab 19: desligue (so no laboratorio) para ver um evento duplicado contar em dobro.
+    enabled: ${FRAUD_IDEMPOTENCY_ENABLED:true}
 
 logging:
   level:

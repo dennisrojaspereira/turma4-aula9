@@ -35,9 +35,9 @@ class FraudStoreIT extends AbstractFraudStoreIT {
     @Test
     void evaluatesWithAnEmptyLocalViewAndIsBlindToHistory() {
         UUID payer = UUID.randomUUID();
-        UUID payee = UUID.randomUUID();
+        UUID payee = quietPayee();
 
-        ResponseEntity<Map> response = evaluate(payer, payee, "50.00", "phone", NOW);
+        ResponseEntity<Map> response = evaluate(payer, payee, "50.00", "phone-" + payer, NOW);
 
         // Sem historico, nenhuma regra de velocity dispara. So new-account (+20): Fraud nunca viu esta conta.
         assertThat(response.getBody().get("decision")).isEqualTo("APPROVED");
@@ -48,18 +48,18 @@ class FraudStoreIT extends AbstractFraudStoreIT {
     @Test
     void localViewFeedsTheRulesOnceSomeoneFillsIt() {
         UUID payer = UUID.randomUUID();
-        UUID payee = UUID.randomUUID();
+        UUID payee = quietPayee();
         for (int i = 0; i < 12; i++) {
             jdbc.sql("""
                     INSERT INTO payment_history (payment_id, payer_account_id, payee_account_id, amount, device_id, status, payer_opened_at, occurred_at, updated_at)
-                    VALUES (:id, :payer, :payee, 20.00, 'phone', 'APPROVED', :opened, :at, :at)
+                    VALUES (:id, :payer, :payee, 20.00, :device, 'APPROVED', :opened, :at, :at)
                     """)
-                    .param("id", UUID.randomUUID()).param("payer", payer).param("payee", payee)
+                    .param("id", UUID.randomUUID()).param("payer", payer).param("payee", payee).param("device", "phone-" + payer)
                     .param("opened", java.sql.Timestamp.from(NOW.minus(Duration.ofDays(400))))
                     .param("at", java.sql.Timestamp.from(NOW.minus(Duration.ofMinutes(5 + i)))).update();
         }
 
-        ResponseEntity<Map> response = evaluate(payer, payee, "20.00", "phone", NOW);
+        ResponseEntity<Map> response = evaluate(payer, payee, "20.00", "phone-" + payer, NOW);
 
         // Mesma decisao que o teste equivalente sobre o schema legado (FraudEvaluationIT): velocity +20.
         assertThat(response.getBody().get("score")).isEqualTo(20);

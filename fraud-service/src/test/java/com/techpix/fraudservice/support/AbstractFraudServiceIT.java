@@ -46,8 +46,22 @@ public abstract class AbstractFraudServiceIT {
     @Autowired
     protected JdbcClient jdbc;
 
+
+    /**
+     * A regra external-provider e deterministica pelo hash do destinatario (~5% recebem +20).
+     * Para testes previsiveis, escolhemos destinatarios fora dessa faixa.
+     */
+    protected static UUID quietPayee() {
+        while (true) {
+            UUID id = UUID.randomUUID();
+            if (Math.floorMod(id.hashCode(), 100) >= 5) {
+                return id;
+            }
+        }
+    }
+
     protected UUID legacyAccount(Instant createdAt) {
-        UUID id = UUID.randomUUID();
+        UUID id = quietPayee();
         jdbc.sql("INSERT INTO accounts (id, owner_name, balance, status, created_at) VALUES (:id, 'test', 1000, 'ACTIVE', :at)")
                 .param("id", id).param("at", Timestamp.from(createdAt)).update();
         return id;

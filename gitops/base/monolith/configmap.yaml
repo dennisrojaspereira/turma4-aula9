@@ -4,6 +4,8 @@ metadata:
   name: monolith-config
 data:
   TECHPIX_DB_HOST: postgres
+  KAFKA_BOOTSTRAP: kafka:9092
+  TECHPIX_EVENTS_ENABLED: "true"
   TECHPIX_FRAUD_PROFILE: HEAVY_OPTIMIZED
   # Strangler: comeca em LEGACY. Trocar para NEW e uma edicao aqui, ou PUT /admin/fraud/mode ao vivo.
   TECHPIX_FRAUD_MODE: LEGACY

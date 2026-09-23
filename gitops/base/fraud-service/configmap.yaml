@@ -4,6 +4,8 @@ metadata:
   name: fraud-service-config
 data:
   FRAUD_DB_HOST: postgres
+  KAFKA_BOOTSTRAP: kafka:9092
+  FRAUD_EVENTS_ENABLED: "true"
   # Etapa 12: banco proprio (fraud_db, usuario fraud), schema pelo Flyway do servico, historico pela visao local.
   FRAUD_DB_NAME: fraud_db
   FRAUD_DB_USER: fraud

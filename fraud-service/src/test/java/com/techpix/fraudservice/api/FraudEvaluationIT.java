@@ -27,10 +27,10 @@ class FraudEvaluationIT extends AbstractFraudServiceIT {
         UUID payer = legacyAccount(NOW.minus(Duration.ofDays(400)));
         UUID payee = legacyAccount(NOW.minus(Duration.ofDays(400)));
         for (int i = 0; i < 12; i++) {
-            legacyPayment(payer, payee, "20.00", "phone", "APPROVED", NOW.minus(Duration.ofMinutes(5 + i)));
+            legacyPayment(payer, payee, "20.00", "phone-" + payer, "APPROVED", NOW.minus(Duration.ofMinutes(5 + i)));
         }
 
-        ResponseEntity<Map> response = evaluate(payer, payee, "20.00", "phone", NOW);
+        ResponseEntity<Map> response = evaluate(payer, payee, "20.00", "phone-" + payer, NOW);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         // 12 pagamentos na ultima hora: payer-history dispara velocity (+20). Nada mais.
@@ -47,7 +47,7 @@ class FraudEvaluationIT extends AbstractFraudServiceIT {
         UUID payer = legacyAccount(NOW.minus(Duration.ofHours(2)));
         UUID payee = legacyAccount(NOW.minus(Duration.ofDays(400)));
 
-        ResponseEntity<Map> response = evaluate(payer, payee, "5500.50", "phone", NOW);
+        ResponseEntity<Map> response = evaluate(payer, payee, "5500.50", "phone-" + payer, NOW);
 
         // amount-limit (40) + new-account (20) + new-payee (25) = 85
         assertThat(response.getBody().get("score")).isEqualTo(85);
