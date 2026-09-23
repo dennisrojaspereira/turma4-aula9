@@ -16,7 +16,8 @@ kubectl config use-context kind-techpix >/dev/null
 
 echo "== instalando Argo CD (namespace argocd)"
 kubectl create namespace argocd --dry-run=client -o yaml | kubectl apply -f - >/dev/null
-kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml >/dev/null
+# --server-side: os CRDs do Argo CD sao grandes demais para a annotation do apply client-side.
+kubectl apply --server-side --force-conflicts -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml >/dev/null
 echo "== aguardando componentes (pode levar alguns minutos na primeira vez)"
 kubectl -n argocd rollout status deployment/argocd-server --timeout=600s
 kubectl -n argocd rollout status deployment/argocd-repo-server --timeout=600s

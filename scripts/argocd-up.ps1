@@ -6,7 +6,7 @@ if (-not $env:TECHPIX_GIT_URL) { throw "defina TECHPIX_GIT_URL com a URL do seu 
 
 kubectl config use-context kind-techpix | Out-Null
 kubectl create namespace argocd --dry-run=client -o yaml | kubectl apply -f - | Out-Null
-kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml | Out-Null
+kubectl apply --server-side --force-conflicts -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml | Out-Null
 kubectl -n argocd rollout status deployment/argocd-server --timeout=600s
 kubectl -n argocd rollout status deployment/argocd-repo-server --timeout=600s
 kubectl -n argocd rollout status statefulset/argocd-application-controller --timeout=600s

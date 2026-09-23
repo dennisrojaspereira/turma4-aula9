@@ -45,17 +45,42 @@ flowchart LR
 
 ## Como executar
 
-**Pré-requisito real:** o Argo CD roda **dentro** do cluster e clona o repositório de lá. Este repositório precisa estar em um Git remoto que o cluster alcance (GitHub, GitLab, Gitea). Um diretório local não serve.
+**Pré-requisito real:** o Argo CD roda **dentro** do cluster e clona o repositório de lá. Este repositório precisa estar em um Git remoto que o cluster alcance. Um diretório local não serve.
+
+Duas opções:
+
+**A. Sem internet, sem GitHub: um Gitea local em container.** É o que a aula usa.
+
+```bash
+scripts/local-git-server.sh       # sobe o Gitea em :3001, cria o repo, faz push de main e das tags
+TECHPIX_GIT_URL=http://host.docker.internal:3001/techpix/tech-pix.git scripts/argocd-up.sh
+```
+
+Depois de cada commit novo: `scripts/local-git-server.sh push`.
+
+**B. GitHub (ou GitLab).**
 
 ```bash
 git remote add origin https://github.com/SEU-USUARIO/tech-pix.git
 git push -u origin main --tags
-
 TECHPIX_GIT_URL=https://github.com/SEU-USUARIO/tech-pix.git scripts/argocd-up.sh
-kubectl -n argocd port-forward svc/argocd-server 8443:443     # UI em https://localhost:8443, usuario admin
 ```
 
-Instalar antes da aula: a primeira instalação baixa várias imagens e leva alguns minutos.
+Em ambos:
+
+```bash
+kubectl -n argocd port-forward svc/argocd-server 8443:443     # UI em https://localhost:8443, usuario admin
+kubectl -n argocd get applications
+```
+
+```text
+NAME           SYNC STATUS   HEALTH STATUS
+techpix-dev    Synced        Healthy
+techpix-qa     Synced        Healthy
+techpix-prod   OutOfSync     Missing        <- manual por decisao: alguem aprova
+```
+
+Instalar antes da aula: a primeira instalação baixa várias imagens e leva alguns minutos. O install usa `kubectl apply --server-side` porque os CRDs do Argo CD são grandes demais para o apply client-side.
 
 ### Demonstração de drift
 
@@ -72,8 +97,7 @@ NAME            READY   UP-TO-DATE   AVAILABLE
 fraud-service   2/5     5            2
 == Argo CD: Desired != Actual -> drift -> reconciliation. Aguardando...
    t=  2s  replicas=5  sync=OutOfSync
-   t=  4s  replicas=5  sync=OutOfSync
-   t=  6s  replicas=2  sync=Synced
+   t=  4s  replicas=2  sync=Synced
 == reconciliado: o cluster voltou ao que o Git diz (2 replicas).
 ```
 
@@ -120,12 +144,12 @@ Argo CD
 - o Argo CD nao ve estado em memoria: PUT /admin/fraud/mode nao gera drift detectavel.
   Por isso, fora de DEV, a flag so muda por ConfigMap (e restart) ou por commit.
 - selfHeal em PROD e uma decisao de risco que precisa estar escrita (ADR 005)
-- precisa de um Git remoto acessivel pelo cluster; laboratorio offline nao funciona
+- precisa de um Git remoto acessivel pelo cluster (por isso o Gitea local em scripts/local-git-server.sh)
 ```
 
 ## Pergunta para discussão
 
-> O Argo CD desfez o `kubectl scale` em 6 segundos. Isso é bom ou ruim durante um incidente às 3h da manhã, quando o operador precisa escalar **agora**?
+> O Argo CD desfez o `kubectl scale` em 4 segundos. Isso é bom ou ruim durante um incidente às 3h da manhã, quando o operador precisa escalar **agora**?
 
 (Depende de ter um caminho rápido e legítimo: um commit de uma linha com merge direto, ou desligar o selfHeal por uma janela. A resposta precisa existir **antes** do incidente.)
 
@@ -133,7 +157,7 @@ Argo CD
 
 ```text
 Pergunta:
-O que aconteceu entre t=4s e t=6s?
+O que aconteceu entre t=2s e t=4s?
 
 Resposta:
 O Argo CD comparou o cluster com o Git, viu 5 != 2, e aplicou o Git. Sem ninguem pedir.
