@@ -9,7 +9,7 @@ import java.util.EnumSet;
 import java.util.Set;
 import org.springframework.stereotype.Component;
 
-/** Um dispositivo usado por muitas contas diferentes. Uma consulta, sem índice em device_id. */
+/** Um dispositivo usado por muitas contas diferentes. Uma consulta. Sem índice em device_id era um seq scan; com o índice (V3) toca só as linhas do dispositivo. Mesma consulta, custo diferente. */
 @Component
 public class DeviceFingerprintRule implements FraudRule {
 
@@ -26,7 +26,7 @@ public class DeviceFingerprintRule implements FraudRule {
 
     @Override
     public Set<FraudProfile> profiles() {
-        return EnumSet.of(FraudProfile.HEAVY);
+        return EnumSet.of(FraudProfile.HEAVY, FraudProfile.HEAVY_OPTIMIZED);
     }
 
     @Override

@@ -26,7 +26,7 @@ public class NewAccountRule implements FraudRule {
 
     @Override
     public Set<FraudProfile> profiles() {
-        return EnumSet.of(FraudProfile.HEAVY);
+        return EnumSet.of(FraudProfile.HEAVY, FraudProfile.HEAVY_OPTIMIZED);
     }
 
     @Override

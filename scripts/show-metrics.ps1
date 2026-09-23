@@ -2,9 +2,9 @@
 $base = if ($env:TECHPIX_URL) { $env:TECHPIX_URL } else { "http://localhost:8080" }
 $m = "$base/actuator/metrics"
 
-function Get-Stat($metric, $mode, $tag) {
-    $url = "$m/$metric"
-    if ($tag) { $url = "$url?tag=$tag" }
+function Get-Stat($metric, $mode, [string[]]$tags) {
+    $url = "$m/$metric?"
+    foreach ($t in $tags) { if ($t) { $url = "$url&tag=$t" } }
     try {
         $d = Invoke-RestMethod -Uri $url
         $s = @{}
@@ -25,7 +25,9 @@ function Get-Stat($metric, $mode, $tag) {
 }
 
 Write-Host "== Perfil de Fraud"
-Invoke-RestMethod -Uri "$base/admin/fraud/profile" | ConvertTo-Json -Compress
+$profileInfo = Invoke-RestMethod -Uri "$base/admin/fraud/profile"
+$profileInfo | ConvertTo-Json -Compress
+$profileTag = "profile:$($profileInfo.profile)"
 Write-Host ""
 Write-Host "== Payment (POST /payments)"
 Write-Host "  requests:        $(Get-Stat 'payment.create' 'count')"
@@ -34,9 +36,9 @@ Write-Host "  max ms:          $(Get-Stat 'payment.create' 'max_ms')"
 Write-Host "  queries/payment: $(Get-Stat 'payment.queries' 'mean')"
 Write-Host ""
 Write-Host "== Fraud (FraudService.evaluate)"
-Write-Host "  mean ms:         $(Get-Stat 'fraud.evaluation' 'mean_ms')"
-Write-Host "  max ms:          $(Get-Stat 'fraud.evaluation' 'max_ms')"
-Write-Host "  queries/fraud:   $(Get-Stat 'fraud.queries' 'mean')"
+Write-Host "  mean ms:         $(Get-Stat 'fraud.evaluation' 'mean_ms' $profileTag)"
+Write-Host "  max ms:          $(Get-Stat 'fraud.evaluation' 'max_ms' $profileTag)"
+Write-Host "  queries/fraud:   $(Get-Stat 'fraud.queries' 'mean' $profileTag)"
 Write-Host ""
 Write-Host "== Pool de conexoes (HikariCP)"
 Write-Host "  max:             $(Get-Stat 'hikaricp.connections.max' 'value')"
@@ -49,7 +51,7 @@ Write-Host "== Tempo medio por regra de Fraud (ms) e consultas por regra"
 try {
     $rules = ((Invoke-RestMethod -Uri "$m/fraud.rule").availableTags | Where-Object { $_.tag -eq 'rule' }).values
     $rows = foreach ($r in $rules) {
-        [pscustomobject]@{ rule = $r; ms = Get-Stat 'fraud.rule' 'mean_ms' "rule:$r"; queries = Get-Stat 'fraud.rule.queries' 'mean' "rule:$r" }
+        [pscustomobject]@{ rule = $r; ms = Get-Stat 'fraud.rule' 'mean_ms' @("rule:$r", $profileTag); queries = Get-Stat 'fraud.rule.queries' 'mean' @("rule:$r", $profileTag) }
     }
     $rows | Sort-Object ms -Descending | Format-Table -AutoSize
 } catch { Write-Host "  (nenhuma avaliacao de fraude ainda)" }

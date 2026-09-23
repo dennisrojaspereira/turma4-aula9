@@ -2,6 +2,7 @@ package com.techpix;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
  * Tech Pix: um único processo com Account, Payment, Ledger, Fraud e Notification.
@@ -10,6 +11,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * é uma decisão válida. Simplicidade também é arquitetura.
  */
 @SpringBootApplication
+@EnableScheduling
 public class TechPixApplication {
 
     public static void main(String[] args) {

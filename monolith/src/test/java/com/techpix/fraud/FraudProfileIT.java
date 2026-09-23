@@ -55,5 +55,8 @@ class FraudProfileIT extends AbstractIntegrationTest {
         Map current = http.getForObject("/admin/fraud/profile", Map.class);
         assertThat(current.get("profile")).isEqualTo("HEAVY");
         assertThat(current.get("ruleCount")).isEqualTo(17);
+
+        http.put("/admin/fraud/profile", Map.of("profile", "HEAVY_OPTIMIZED"));
+        assertThat(http.getForObject("/admin/fraud/profile", Map.class).get("ruleCount")).isEqualTo(13);
     }
 }

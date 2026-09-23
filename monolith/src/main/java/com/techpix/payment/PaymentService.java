@@ -20,14 +20,25 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 /**
- * O caso de uso central da Tech Pix. Uma única transação de banco cobre
- * validação, fraude, ledger e notificação. É simples e, hoje, isso é uma virtude.
+ * O caso de uso central da Tech Pix.
  * <p>
- * A partir da etapa 3, cada pagamento registra: tempo total, tempo de Fraud e consultas ao banco.
- * Uma linha de log por pagamento responde "onde o tempo foi gasto?".
+ * Até a etapa 3, uma única transação cobria tudo, inclusive a avaliação de Fraud. O lab 03 mostrou
+ * o custo disso: cada conexão do pool ficava presa durante toda a avaliação, inclusive durante os
+ * 30 ms em que a thread dormia esperando o provider externo.
+ * <p>
+ * A partir da etapa 4 o fluxo tem três fases:
+ * <ol>
+ *   <li>transação curta: validar e registrar o pagamento como PENDING;</li>
+ *   <li>fora de transação: avaliar fraude (cada consulta pega e devolve a conexão);</li>
+ *   <li>transação curta: liquidar (transferência, ledger, status) ou rejeitar.</li>
+ * </ol>
+ * Trade-off: se o processo cair entre as fases, sobra um pagamento PENDING. Isso é novo. Antes
+ * não existia. É o primeiro sinal de que "uma transação para tudo" era uma garantia que estávamos
+ * pagando caro para manter.
  */
 @Service
 public class PaymentService {
@@ -46,54 +57,39 @@ public class PaymentService {
     private final LedgerService ledger;
     private final NotificationService notifications;
     private final Clock clock;
+    private final TransactionTemplate tx;
     private final Timer paymentTimer;
     private final DistributionSummary paymentQueries;
 
     public PaymentService(PaymentRepository payments, AccountService accounts, FraudService fraud,
-                          LedgerService ledger, NotificationService notifications, Clock clock, MeterRegistry metrics) {
+                          LedgerService ledger, NotificationService notifications, Clock clock,
+                          PlatformTransactionManager transactionManager, MeterRegistry metrics) {
         this.payments = payments;
         this.accounts = accounts;
         this.fraud = fraud;
         this.ledger = ledger;
         this.notifications = notifications;
         this.clock = clock;
+        this.tx = new TransactionTemplate(transactionManager);
         this.paymentTimer = Timer.builder("payment.create").description("Tempo total de POST /payments").register(metrics);
         this.paymentQueries = DistributionSummary.builder("payment.queries")
                 .description("Instrucoes SQL executadas por pagamento").register(metrics);
     }
 
-    @Transactional
     public PaymentOutcome create(CreatePayment command) {
         long start = System.nanoTime();
         QueryCounter.reset();
 
-        Account payer = accounts.requireActive(command.payerAccountId());
-        accounts.requireActive(command.payeeAccountId());
-        if (payer.balance().compareTo(command.amount()) < 0) {
-            throw DomainException.unprocessable("insufficient funds on account " + payer.id());
-        }
+        // Fase 1: transação curta. Valida e registra a intenção de pagar.
+        Payment payment = tx.execute(status -> registerPending(command));
 
-        Instant now = Instant.now(clock);
-        Payment payment = new Payment(UUID.randomUUID(), command.payerAccountId(), command.payeeAccountId(),
-                command.amount(), command.deviceId(), PaymentStatus.PENDING, null, now);
-        payments.insert(payment);
-
+        // Fase 2: sem transação. Fraud lê histórico e grava sua avaliação; nenhuma conexão fica presa entre consultas.
         FraudResult result = fraud.evaluate(new FraudCheck(payment.id(), payment.payerAccountId(),
-                payment.payeeAccountId(), payment.amount(), payment.deviceId(), now));
+                payment.payeeAccountId(), payment.amount(), payment.deviceId(), payment.createdAt()));
 
-        if (result.rejected()) {
-            String reason = "fraud score " + result.score() + " rules " + result.triggeredRules();
-            payments.updateStatus(payment.id(), PaymentStatus.REJECTED, reason);
-            notifications.notify(payment.payerAccountId(), "Payment " + payment.id() + " rejected");
-        } else {
-            accounts.transfer(payment.payerAccountId(), payment.payeeAccountId(), payment.amount());
-            ledger.record(payment.id(), payment.payerAccountId(), payment.payeeAccountId(), payment.amount());
-            payments.updateStatus(payment.id(), PaymentStatus.APPROVED, null);
-            notifications.notify(payment.payerAccountId(), "Payment " + payment.id() + " approved");
-            notifications.notify(payment.payeeAccountId(), "You received " + payment.amount());
-        }
+        // Fase 3: transação curta. Liquida ou rejeita.
+        Payment stored = tx.execute(status -> result.rejected() ? reject(payment, result) : settle(payment));
 
-        Payment stored = payments.findById(payment.id()).orElseThrow();
         long totalMs = (System.nanoTime() - start) / 1_000_000;
         long queries = QueryCounter.current();
         paymentTimer.record(totalMs, TimeUnit.MILLISECONDS);
@@ -101,6 +97,34 @@ public class PaymentService {
         log.info("payment={} status={} score={} totalMs={} fraudMs={} queries={} fraudRules={}",
                 stored.id(), stored.status(), result.score(), totalMs, result.durationMs(), queries, result.rulesEvaluated());
         return new PaymentOutcome(stored, result, totalMs, queries);
+    }
+
+    private Payment registerPending(CreatePayment command) {
+        Account payer = accounts.requireActive(command.payerAccountId());
+        accounts.requireActive(command.payeeAccountId());
+        if (payer.balance().compareTo(command.amount()) < 0) {
+            throw DomainException.unprocessable("insufficient funds on account " + payer.id());
+        }
+        Payment payment = new Payment(UUID.randomUUID(), command.payerAccountId(), command.payeeAccountId(),
+                command.amount(), command.deviceId(), PaymentStatus.PENDING, null, Instant.now(clock));
+        payments.insert(payment);
+        return payment;
+    }
+
+    private Payment reject(Payment payment, FraudResult result) {
+        String reason = "fraud score " + result.score() + " rules " + result.triggeredRules();
+        payments.updateStatus(payment.id(), PaymentStatus.REJECTED, reason);
+        notifications.notify(payment.payerAccountId(), "Payment " + payment.id() + " rejected");
+        return payments.findById(payment.id()).orElseThrow();
+    }
+
+    private Payment settle(Payment payment) {
+        accounts.transfer(payment.payerAccountId(), payment.payeeAccountId(), payment.amount());
+        ledger.record(payment.id(), payment.payerAccountId(), payment.payeeAccountId(), payment.amount());
+        payments.updateStatus(payment.id(), PaymentStatus.APPROVED, null);
+        notifications.notify(payment.payerAccountId(), "Payment " + payment.id() + " approved");
+        notifications.notify(payment.payeeAccountId(), "You received " + payment.amount());
+        return payments.findById(payment.id()).orElseThrow();
     }
 
     public Payment get(UUID id) {
