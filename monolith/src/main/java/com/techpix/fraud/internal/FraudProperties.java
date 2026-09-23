@@ -13,6 +13,7 @@ import org.springframework.boot.context.properties.bind.DefaultValue;
  * @param mlIterations      iterações do "modelo de ML" simulado; controla o custo de CPU
  * @param remote            como chegar ao Fraud Service
  * @param parallel          limites do shadow no Parallel Run
+ * @param canary            percentual inicial do canário
  */
 @ConfigurationProperties(prefix = "techpix.fraud")
 public record FraudProperties(
@@ -22,7 +23,8 @@ public record FraudProperties(
         @DefaultValue("30") long providerLatencyMs,
         @DefaultValue("200000") int mlIterations,
         @DefaultValue Remote remote,
-        @DefaultValue Parallel parallel) {
+        @DefaultValue Parallel parallel,
+        @DefaultValue Canary canary) {
 
     /**
      * @param url              endereço base do Fraud Service
@@ -44,5 +46,9 @@ public record FraudProperties(
             @DefaultValue("1500") long shadowTimeoutMs,
             @DefaultValue("8") int threads,
             @DefaultValue("100") int queueSize) {
+    }
+
+    /** @param percentage 0..100 dos pagamentos decididos pelo Fraud Service em modo CANARY */
+    public record Canary(@DefaultValue("0") int percentage) {
     }
 }

@@ -48,6 +48,8 @@ techpix:
       shadow-timeout-ms: ${TECHPIX_FRAUD_SHADOW_TIMEOUT_MS:1500}
       threads: 8
       queue-size: 100
+    canary:
+      percentage: ${TECHPIX_FRAUD_CANARY_PERCENTAGE:0}
     remote:
       url: ${TECHPIX_FRAUD_SERVICE_URL:http://localhost:8081}
       connect-timeout-ms: ${TECHPIX_FRAUD_CONNECT_TIMEOUT_MS:500}

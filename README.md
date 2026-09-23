@@ -45,6 +45,7 @@ Os laboratórios em [docs/labs/](docs/labs/) seguem a evolução do sistema. Cad
 | [12 — Readiness, Liveness e Startup](docs/labs/12-health-checks.md) | `aula07-step-08-kubernetes` |
 | [13 — Branch by Abstraction + Feature Flag](docs/labs/13-feature-flags.md) | `aula07-step-09-feature-flag-parallel-run` |
 | [14 — Parallel Run](docs/labs/14-parallel-run.md) | `aula07-step-09-feature-flag-parallel-run` |
+| [15 — Canary](docs/labs/15-canary.md) | `aula07-step-10-canary` |
 
 ## Decisões
 
