@@ -1,13 +1,15 @@
 package com.techpix.fraud;
 
 /**
- * Quem decide: o Fraud legado (in-process) ou o Fraud Service (remoto).
+ * A Feature Flag do Strangler: quem decide sobre um pagamento.
  * <p>
- * LEGACY: só o legado. É o estado inicial e o destino de qualquer rollback.
- * NEW: só o remoto.
+ * LEGACY:   só o legado (in-process). Estado inicial e destino de qualquer rollback.
+ * PARALLEL: o legado decide; o novo roda em shadow e os dois resultados são comparados.
+ * NEW:      só o novo (Fraud Service).
  * <p>
- * Outros modos (PARALLEL, CANARY) entram quando houver motivo para eles.
+ * Sem SaaS de feature flag: é um enum, um bean mutável e um endpoint administrativo.
+ * Em Kubernetes, o valor inicial vem do ConfigMap; a troca ao vivo vem do endpoint.
  */
 public enum FraudMode {
-    LEGACY, NEW
+    LEGACY, PARALLEL, NEW
 }

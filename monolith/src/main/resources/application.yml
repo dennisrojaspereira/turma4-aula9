@@ -42,8 +42,12 @@ techpix:
     profile: ${TECHPIX_FRAUD_PROFILE:SIMPLE}
     provider-latency-ms: ${TECHPIX_FRAUD_PROVIDER_LATENCY_MS:30}
     ml-iterations: ${TECHPIX_FRAUD_ML_ITERATIONS:200000}
-    # Strangler Fig: LEGACY = Fraud in-process; NEW = Fraud Service remoto.
+    # Feature flag do Strangler: LEGACY = Fraud in-process; PARALLEL = legado decide, novo em shadow; NEW = so o remoto.
     mode: ${TECHPIX_FRAUD_MODE:LEGACY}
+    parallel:
+      shadow-timeout-ms: ${TECHPIX_FRAUD_SHADOW_TIMEOUT_MS:1500}
+      threads: 8
+      queue-size: 100
     remote:
       url: ${TECHPIX_FRAUD_SERVICE_URL:http://localhost:8081}
       connect-timeout-ms: ${TECHPIX_FRAUD_CONNECT_TIMEOUT_MS:500}

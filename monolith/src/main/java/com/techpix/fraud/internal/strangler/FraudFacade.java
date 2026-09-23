@@ -15,23 +15,25 @@ import org.springframework.stereotype.Component;
  *    v
  * FraudFacade
  *    |
- *    +------> LegacyFraud   (FraudService, in-process)
- *    |
- *    +------> NewFraud      (RemoteFraudEvaluator, HTTP -> Fraud Service)
+ *    +------> LegacyFraud      (FraudService, in-process)
+ *    +------> ParallelRun      (legado decide, novo em shadow, comparador)
+ *    +------> NewFraud         (RemoteFraudEvaluator, HTTP -> Fraud Service)
  * </pre>
- * Payment não sabe qual dos dois respondeu. A escolha é configuração, alterável em runtime.
- * O legado não é removido: convive com o novo até o novo provar que é equivalente e seguro.
+ * Payment não sabe qual dos três respondeu. A escolha é a feature flag {@code fraud.mode},
+ * alterável em runtime. O legado não é removido até o novo provar que é equivalente e seguro.
  */
 @Component
 @Primary
 public class FraudFacade implements FraudEvaluator {
 
     private final FraudService legacy;
+    private final ParallelRunEvaluator parallel;
     private final RemoteFraudEvaluator remote;
     private final FraudModeConfig mode;
 
-    public FraudFacade(FraudService legacy, RemoteFraudEvaluator remote, FraudModeConfig mode) {
+    public FraudFacade(FraudService legacy, ParallelRunEvaluator parallel, RemoteFraudEvaluator remote, FraudModeConfig mode) {
         this.legacy = legacy;
+        this.parallel = parallel;
         this.remote = remote;
         this.mode = mode;
     }
@@ -40,6 +42,7 @@ public class FraudFacade implements FraudEvaluator {
     public FraudResult evaluate(FraudCheck check) {
         return switch (mode.mode()) {
             case LEGACY -> legacy.evaluate(check);
+            case PARALLEL -> parallel.evaluate(check);
             case NEW -> remote.evaluate(check);
         };
     }
