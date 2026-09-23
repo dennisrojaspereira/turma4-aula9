@@ -48,6 +48,7 @@ Os laboratórios em [docs/labs/](docs/labs/) seguem a evolução do sistema. Cad
 | [15 — Canary](docs/labs/15-canary.md) | `aula07-step-10-canary` |
 | [16 — Configuração dos ambientes e GitOps](docs/labs/16-gitops.md) | `aula07-step-11-gitops-argocd` |
 | [17 — Argo CD: reconciliação](docs/labs/17-argocd.md) | `aula07-step-11-gitops-argocd` |
+| [18 — Shared Database e Database per Service](docs/labs/18-database-per-service.md) | `aula07-step-12-database-per-service` |
 
 ## Decisões
 

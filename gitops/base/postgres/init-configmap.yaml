@@ -1,0 +1,16 @@
+# Scripts de inicializacao do PostgreSQL (rodam so na primeira subida do volume).
+# Mesmo conteudo de docker/postgres/init: extensao de estatisticas e o banco/usuario do Fraud Service.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-init
+data:
+  01-extensions.sql: |
+    CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
+  02-fraud-db.sql: |
+    CREATE USER fraud WITH PASSWORD 'fraud';
+    CREATE DATABASE fraud_db OWNER fraud;
+    REVOKE CONNECT ON DATABASE techpix FROM PUBLIC;
+    REVOKE CONNECT ON DATABASE fraud_db FROM PUBLIC;
+    GRANT CONNECT ON DATABASE techpix TO techpix;
+    GRANT CONNECT ON DATABASE fraud_db TO fraud;

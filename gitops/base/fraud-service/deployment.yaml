@@ -32,7 +32,7 @@ spec:
             - name: FRAUD_DB_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: techpix-db
+                  name: fraud-db
                   key: password
           # requests: o que o scheduler reserva. limits: o teto. CPU acima do limit e throttling; memoria acima e OOMKill.
           # O HPA calcula utilizacao sobre o REQUEST, nao sobre o limit.

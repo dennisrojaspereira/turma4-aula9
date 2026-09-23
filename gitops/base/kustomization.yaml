@@ -3,6 +3,7 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
+  - postgres/init-configmap.yaml
   - postgres/deployment.yaml
   - postgres/service.yaml
   - monolith/configmap.yaml
@@ -10,6 +11,7 @@ resources:
   - monolith/deployment.yaml
   - monolith/service.yaml
   - fraud-service/configmap.yaml
+  - fraud-service/secret.yaml
   - fraud-service/deployment.yaml
   - fraud-service/service.yaml
 labels:

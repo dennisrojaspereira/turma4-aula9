@@ -2,15 +2,16 @@ spring:
   application:
     name: techpix-fraud-service
   datasource:
-    # Etapa 8: o MESMO banco do monolito. Isso e uma divida assumida (ADR 003). Ver lab 18.
-    url: jdbc:postgresql://${FRAUD_DB_HOST:localhost}:${FRAUD_DB_PORT:5432}/${FRAUD_DB_NAME:techpix}
-    username: ${FRAUD_DB_USER:techpix}
-    password: ${FRAUD_DB_PASSWORD:techpix}
+    # A partir da etapa 12: banco proprio (fraud_db, usuario fraud). Para reproduzir a etapa 8 (banco compartilhado):
+    #   FRAUD_DB_NAME=techpix FRAUD_DB_USER=techpix FRAUD_DB_PASSWORD=techpix FRAUD_FLYWAY_ENABLED=false FRAUD_HISTORY_SOURCE=LEGACY_SCHEMA
+    url: jdbc:postgresql://${FRAUD_DB_HOST:localhost}:${FRAUD_DB_PORT:5432}/${FRAUD_DB_NAME:fraud_db}
+    username: ${FRAUD_DB_USER:fraud}
+    password: ${FRAUD_DB_PASSWORD:fraud}
     hikari:
       maximum-pool-size: ${FRAUD_DB_POOL:10}
   flyway:
-    # Desligado: o schema pertence ao monolito. O Fraud Service nao pode criar nem alterar tabelas dele.
-    enabled: ${FRAUD_FLYWAY_ENABLED:false}
+    # Ligado: o schema de fraud_db pertence ao Fraud Service. Desligado na etapa 8, quando o schema era do monolito.
+    enabled: ${FRAUD_FLYWAY_ENABLED:true}
 
 server:
   port: ${SERVER_PORT:8081}
@@ -47,7 +48,8 @@ fraud:
   provider-latency-ms: ${FRAUD_PROVIDER_LATENCY_MS:30}
   ml-iterations: ${FRAUD_ML_ITERATIONS:200000}
   warmup-seconds: ${FRAUD_WARMUP_SECONDS:0}
-  history-source: ${FRAUD_HISTORY_SOURCE:LEGACY_SCHEMA}
+  # LOCAL_VIEW: historico vem de payment_history (fraud_db). LEGACY_SCHEMA: le payments do banco do monolito (etapa 8).
+  history-source: ${FRAUD_HISTORY_SOURCE:LOCAL_VIEW}
   blacklist-refresh-ms: 30000
 
 logging:

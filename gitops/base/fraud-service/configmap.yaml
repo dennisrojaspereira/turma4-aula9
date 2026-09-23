@@ -4,6 +4,11 @@ metadata:
   name: fraud-service-config
 data:
   FRAUD_DB_HOST: postgres
+  # Etapa 12: banco proprio (fraud_db, usuario fraud), schema pelo Flyway do servico, historico pela visao local.
+  FRAUD_DB_NAME: fraud_db
+  FRAUD_DB_USER: fraud
+  FRAUD_FLYWAY_ENABLED: "true"
+  FRAUD_HISTORY_SOURCE: LOCAL_VIEW
   # Lab 12: o Pod fica Running em segundos, mas so fica Ready depois do warm-up.
   FRAUD_WARMUP_SECONDS: "20"
   FRAUD_ML_ITERATIONS: "200000"

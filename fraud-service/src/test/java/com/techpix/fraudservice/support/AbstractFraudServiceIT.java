@@ -15,9 +15,13 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.PostgreSQLContainer;
 
 /**
+ * O Fraud Service da ETAPA 8: banco compartilhado com o monólito, Flyway desligado, histórico lido do schema legado.
  * PostgreSQL real com uma cópia do schema legado (ver legacy-schema.sql e o aviso lá dentro).
  */
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = {
+        "spring.flyway.enabled=false",
+        "fraud.history-source=LEGACY_SCHEMA"
+})
 public abstract class AbstractFraudServiceIT {
 
     protected static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:16-alpine")

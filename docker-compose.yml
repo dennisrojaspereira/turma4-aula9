@@ -53,6 +53,13 @@ services:
         condition: service_healthy
     environment:
       FRAUD_DB_HOST: postgres
+      # Etapa 12+: banco proprio. Para a etapa 8 (banco compartilhado):
+      #   FRAUD_DB_NAME=techpix FRAUD_DB_USER=techpix FRAUD_DB_PASSWORD=techpix FRAUD_FLYWAY_ENABLED=false FRAUD_HISTORY_SOURCE=LEGACY_SCHEMA
+      FRAUD_DB_NAME: ${FRAUD_DB_NAME:-fraud_db}
+      FRAUD_DB_USER: ${FRAUD_DB_USER:-fraud}
+      FRAUD_DB_PASSWORD: ${FRAUD_DB_PASSWORD:-fraud}
+      FRAUD_FLYWAY_ENABLED: ${FRAUD_FLYWAY_ENABLED:-true}
+      FRAUD_HISTORY_SOURCE: ${FRAUD_HISTORY_SOURCE:-LOCAL_VIEW}
       FRAUD_WARMUP_SECONDS: ${FRAUD_WARMUP_SECONDS:-0}
     ports:
       - "8081:8081"
