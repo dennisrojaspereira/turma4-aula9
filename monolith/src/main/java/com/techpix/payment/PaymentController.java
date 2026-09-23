@@ -32,6 +32,7 @@ public class PaymentController {
             PaymentStatus status,
             int fraudScore,
             List<String> fraudRules,
+            int fraudRulesEvaluated,
             long fraudDurationMs,
             String rejectionReason,
             Instant createdAt) {
@@ -50,7 +51,7 @@ public class PaymentController {
                 request.payerAccountId(), request.payeeAccountId(), request.amount(), request.deviceId()));
         Payment p = outcome.payment();
         return new PaymentResponse(p.id(), p.status(), outcome.fraud().score(), outcome.fraud().triggeredRules(),
-                outcome.fraud().durationMs(), p.rejectionReason(), p.createdAt());
+                outcome.fraud().rulesEvaluated(), outcome.fraud().durationMs(), p.rejectionReason(), p.createdAt());
     }
 
     @GetMapping("/{id}")

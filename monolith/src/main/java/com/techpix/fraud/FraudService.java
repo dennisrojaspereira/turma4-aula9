@@ -10,8 +10,10 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.stereotype.Service;
 
 /**
- * Executa todas as regras registradas, soma os pontos e decide.
- * Cinco regras baratas. Com 10 TPS, ninguém olha para o custo de cada uma.
+ * Executa as regras do perfil ativo, soma os pontos e decide.
+ * <p>
+ * No início eram cinco regras baratas. Depois vieram dezenas. Cada uma foi adicionada
+ * por um motivo de negócio legítimo. Ninguém olhou o custo somado.
  */
 @Service
 @EnableConfigurationProperties(FraudProperties.class)
@@ -21,21 +23,30 @@ public class FraudService {
 
     private final List<FraudRule> rules;
     private final FraudProperties properties;
+    private final FraudProfileConfig profile;
     private final FraudEvaluationRepository evaluations;
     private final Clock clock;
 
-    public FraudService(List<FraudRule> rules, FraudProperties properties, FraudEvaluationRepository evaluations, Clock clock) {
+    public FraudService(List<FraudRule> rules, FraudProperties properties, FraudProfileConfig profile,
+                        FraudEvaluationRepository evaluations, Clock clock) {
         this.rules = rules;
         this.properties = properties;
+        this.profile = profile;
         this.evaluations = evaluations;
         this.clock = clock;
     }
 
     public FraudResult evaluate(FraudCheck check) {
         long start = System.nanoTime();
+        FraudProfile active = profile.active();
         int score = 0;
+        int evaluated = 0;
         List<String> triggered = new ArrayList<>();
         for (FraudRule rule : rules) {
+            if (!rule.profiles().contains(active)) {
+                continue;
+            }
+            evaluated++;
             int points = rule.evaluate(check);
             if (points > 0) {
                 score += points;
@@ -44,14 +55,15 @@ public class FraudService {
         }
         FraudDecision decision = score >= properties.rejectThreshold() ? FraudDecision.REJECTED : FraudDecision.APPROVED;
         long durationMs = (System.nanoTime() - start) / 1_000_000;
-        FraudResult result = new FraudResult(score, decision, List.copyOf(triggered), durationMs);
+        FraudResult result = new FraudResult(score, decision, List.copyOf(triggered), evaluated, durationMs);
         evaluations.insert(check.paymentId(), result, Instant.now(clock));
-        log.debug("fraud payment={} score={} decision={} rules={} durationMs={}",
-                check.paymentId(), score, decision, triggered, durationMs);
+        log.debug("fraud payment={} profile={} rules={} score={} decision={} triggered={} durationMs={}",
+                check.paymentId(), active, evaluated, score, decision, triggered, durationMs);
         return result;
     }
 
-    public int ruleCount() {
-        return rules.size();
+    public List<String> activeRuleNames() {
+        FraudProfile active = profile.active();
+        return rules.stream().filter(r -> r.profiles().contains(active)).map(FraudRule::name).toList();
     }
 }

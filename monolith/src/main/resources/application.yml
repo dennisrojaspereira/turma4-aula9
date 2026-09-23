@@ -12,6 +12,9 @@ spring:
 
 server:
   port: ${SERVER_PORT:8080}
+  tomcat:
+    threads:
+      max: ${TECHPIX_HTTP_THREADS:50}
 
 management:
   endpoints:
@@ -25,6 +28,10 @@ management:
 techpix:
   fraud:
     reject-threshold: 70
+    # SIMPLE = a Tech Pix do inicio (5 regras). HEAVY = depois do crescimento (17 regras).
+    profile: ${TECHPIX_FRAUD_PROFILE:SIMPLE}
+    provider-latency-ms: ${TECHPIX_FRAUD_PROVIDER_LATENCY_MS:30}
+    ml-iterations: ${TECHPIX_FRAUD_ML_ITERATIONS:200000}
 
 logging:
   level:
