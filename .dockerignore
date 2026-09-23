@@ -1,0 +1,10 @@
+**/target
+.git
+docs
+gitops
+kubernetes
+argocd
+load-tests
+scripts
+docker
+*.md

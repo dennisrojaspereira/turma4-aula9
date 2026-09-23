@@ -13,6 +13,7 @@
 
   <modules>
     <module>monolith</module>
+    <module>fraud-service</module>
   </modules>
 
   <properties>

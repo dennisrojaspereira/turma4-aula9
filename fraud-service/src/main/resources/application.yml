@@ -1,0 +1,55 @@
+spring:
+  application:
+    name: techpix-fraud-service
+  datasource:
+    # Etapa 8: o MESMO banco do monolito. Isso e uma divida assumida (ADR 003). Ver lab 18.
+    url: jdbc:postgresql://${FRAUD_DB_HOST:localhost}:${FRAUD_DB_PORT:5432}/${FRAUD_DB_NAME:techpix}
+    username: ${FRAUD_DB_USER:techpix}
+    password: ${FRAUD_DB_PASSWORD:techpix}
+    hikari:
+      maximum-pool-size: ${FRAUD_DB_POOL:10}
+  flyway:
+    # Desligado: o schema pertence ao monolito. O Fraud Service nao pode criar nem alterar tabelas dele.
+    enabled: ${FRAUD_FLYWAY_ENABLED:false}
+
+server:
+  port: ${SERVER_PORT:8081}
+  tomcat:
+    threads:
+      max: ${FRAUD_HTTP_THREADS:50}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        # Expõe /actuator/health/liveness e /actuator/health/readiness (lab 12)
+        enabled: true
+      group:
+        readiness:
+          include: readinessState,db,warmup
+        liveness:
+          include: livenessState
+  metrics:
+    distribution:
+      percentiles-histogram:
+        fraud.evaluation: true
+        fraud.rule: true
+      percentiles:
+        fraud.evaluation: 0.5,0.95,0.99
+
+fraud:
+  reject-threshold: 70
+  provider-latency-ms: ${FRAUD_PROVIDER_LATENCY_MS:30}
+  ml-iterations: ${FRAUD_ML_ITERATIONS:200000}
+  warmup-seconds: ${FRAUD_WARMUP_SECONDS:0}
+  history-source: ${FRAUD_HISTORY_SOURCE:LEGACY_SCHEMA}
+  blacklist-refresh-ms: 30000
+
+logging:
+  level:
+    com.techpix.fraudservice: ${FRAUD_LOG_LEVEL:INFO}

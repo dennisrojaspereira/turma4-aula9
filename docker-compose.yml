@@ -1,6 +1,6 @@
 # Tech Pix.
 #   docker compose up -d postgres                       -> so o banco (monolito roda pelo Maven)
-#   docker compose --profile app up -d                  -> banco + monolito em container
+#   docker compose --profile app up -d                  -> banco + monolito + fraud-service em containers
 #   docker compose --profile observability up -d        -> + Prometheus e Grafana (opcional)
 services:
   postgres:
@@ -25,7 +25,8 @@ services:
 
   monolith:
     build:
-      context: ./monolith
+      context: .
+      dockerfile: monolith/Dockerfile
     image: techpix/monolith:local
     container_name: techpix-monolith
     depends_on:
@@ -34,8 +35,27 @@ services:
     environment:
       TECHPIX_DB_HOST: postgres
       TECHPIX_FRAUD_PROFILE: ${TECHPIX_FRAUD_PROFILE:-SIMPLE}
+      TECHPIX_FRAUD_MODE: ${TECHPIX_FRAUD_MODE:-LEGACY}
+      # Dentro da rede do compose, o nome do servico e o endereco. Sem IP. (Service discovery do Docker, lab 10.)
+      TECHPIX_FRAUD_SERVICE_URL: http://fraud-service:8081
     ports:
       - "8080:8080"
+    profiles: ["app"]
+
+  fraud-service:
+    build:
+      context: .
+      dockerfile: fraud-service/Dockerfile
+    image: techpix/fraud-service:local
+    container_name: techpix-fraud-service
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      FRAUD_DB_HOST: postgres
+      FRAUD_WARMUP_SECONDS: ${FRAUD_WARMUP_SECONDS:-0}
+    ports:
+      - "8081:8081"
     profiles: ["app"]
 
   prometheus:

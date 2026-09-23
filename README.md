@@ -38,6 +38,7 @@ Os laboratórios em [docs/labs/](docs/labs/) seguem a evolução do sistema. Cad
 | [05 — Modular Monolith](docs/labs/05-modular-monolith.md) | `aula07-step-05-modular` |
 | [06 — A dor persiste: decidir extrair](docs/labs/06-extraction-decision.md) | `aula07-step-06-strangler` |
 | [07 — Strangler Fig](docs/labs/07-strangler.md) | `aula07-step-06-strangler` |
+| [08 — Self-contained Fraud Service + ACL](docs/labs/08-fraud-service.md) | `aula07-step-07-fraud-service` |
 
 ## Decisões
 
