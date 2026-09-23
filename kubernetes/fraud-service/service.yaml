@@ -1,0 +1,17 @@
+# O endereco estavel de Fraud. Payment chama http://fraud-service:8081 e o Service:
+#   1. resolve o nome via DNS do cluster (fraud-service.techpix.svc.cluster.local)
+#   2. mantem a lista de Pods READY (endpoints)
+#   3. balanceia entre eles
+# Pods nascem e morrem; o nome nao muda.
+apiVersion: v1
+kind: Service
+metadata:
+  name: fraud-service
+spec:
+  type: NodePort
+  selector:
+    app: fraud-service
+  ports:
+    - port: 8081
+      targetPort: 8081
+      nodePort: 30081     # so para o laboratorio inspecionar de fora; Payment usa a porta 8081 interna

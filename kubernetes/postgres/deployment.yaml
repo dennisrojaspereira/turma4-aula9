@@ -1,0 +1,51 @@
+# PostgreSQL para o laboratorio. Sem volume persistente: os dados somem quando o Pod morre.
+# Em producao, banco em Kubernetes e outra conversa (operators, StatefulSet, storage). Nao e o assunto desta aula.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+  labels:
+    app: postgres
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          args: ["-c", "shared_preload_libraries=pg_stat_statements", "-c", "pg_stat_statements.track=all"]
+          env:
+            - name: POSTGRES_DB
+              value: techpix
+            - name: POSTGRES_USER
+              value: techpix
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: techpix-db
+                  key: password
+          ports:
+            - containerPort: 5432
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "techpix", "-d", "techpix"]
+            periodSeconds: 3
+          resources:
+            requests:
+              cpu: 250m
+              memory: 256Mi
+            limits:
+              cpu: "2"
+              memory: 512Mi
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+      volumes:
+        - name: data
+          emptyDir: {}

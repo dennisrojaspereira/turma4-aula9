@@ -1,0 +1,12 @@
+# Cluster local para o laboratorio. Um unico node. As portas 8090/8091 da maquina
+# apontam para os NodePorts do monolito e do Fraud Service.
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: techpix
+nodes:
+  - role: control-plane
+    extraPortMappings:
+      - containerPort: 30080   # monolith
+        hostPort: 8090
+      - containerPort: 30081   # fraud-service (so para inspecionar; Payment nao usa esta porta)
+        hostPort: 8091

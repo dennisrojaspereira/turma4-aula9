@@ -39,6 +39,10 @@ Os laboratórios em [docs/labs/](docs/labs/) seguem a evolução do sistema. Cad
 | [06 — A dor persiste: decidir extrair](docs/labs/06-extraction-decision.md) | `aula07-step-06-strangler` |
 | [07 — Strangler Fig](docs/labs/07-strangler.md) | `aula07-step-06-strangler` |
 | [08 — Self-contained Fraud Service + ACL](docs/labs/08-fraud-service.md) | `aula07-step-07-fraud-service` |
+| [09 — Onde Fraud roda? Containers e Kubernetes](docs/labs/09-kubernetes.md) | `aula07-step-08-kubernetes` |
+| [10 — Service Discovery](docs/labs/10-service-discovery.md) | `aula07-step-08-kubernetes` |
+| [11 — Escala independente](docs/labs/11-scaling.md) | `aula07-step-08-kubernetes` |
+| [12 — Readiness, Liveness e Startup](docs/labs/12-health-checks.md) | `aula07-step-08-kubernetes` |
 
 ## Decisões
 

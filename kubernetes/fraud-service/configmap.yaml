@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fraud-service-config
+data:
+  FRAUD_DB_HOST: postgres
+  # Lab 12: o Pod fica Running em segundos, mas so fica Ready depois do warm-up.
+  FRAUD_WARMUP_SECONDS: "20"
+  FRAUD_ML_ITERATIONS: "200000"
+  FRAUD_PROVIDER_LATENCY_MS: "30"

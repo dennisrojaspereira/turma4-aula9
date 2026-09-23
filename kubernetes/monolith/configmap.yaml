@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: monolith-config
+data:
+  TECHPIX_DB_HOST: postgres
+  TECHPIX_FRAUD_PROFILE: HEAVY_OPTIMIZED
+  # Strangler: comeca em LEGACY. Trocar para NEW e uma edicao aqui, ou PUT /admin/fraud/mode ao vivo.
+  TECHPIX_FRAUD_MODE: LEGACY
+  # Service discovery: o NOME do Service, resolvido pelo DNS do cluster. Nenhum IP de Pod.
+  TECHPIX_FRAUD_SERVICE_URL: http://fraud-service:8081
+  TECHPIX_FRAUD_READ_TIMEOUT_MS: "2000"

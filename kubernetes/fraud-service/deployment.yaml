@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fraud-service
+  labels:
+    app: fraud-service
+spec:
+  # Fraud escala pelo custo do modelo, independente de Payment. Aqui 3; o HPA (lab 11) ajusta.
+  replicas: 3
+  selector:
+    matchLabels:
+      app: fraud-service
+  strategy:
+    rollingUpdate:
+      maxUnavailable: 0     # zero-downtime: nunca derruba um Pod antes de o novo estar Ready
+      maxSurge: 1
+  template:
+    metadata:
+      labels:
+        app: fraud-service
+    spec:
+      containers:
+        - name: fraud-service
+          image: techpix/fraud-service:local
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8081
+          envFrom:
+            - configMapRef:
+                name: fraud-service-config
+          env:
+            - name: FRAUD_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: techpix-db
+                  key: password
+          # requests: o que o scheduler reserva. limits: o teto. CPU acima do limit e throttling; memoria acima e OOMKill.
+          # O HPA calcula utilizacao sobre o REQUEST, nao sobre o limit.
+          resources:
+            requests:
+              cpu: 250m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 512Mi
+          # "Ja terminou de inicializar?" Enquanto falha, liveness e readiness nao rodam. Evita matar um JVM lento.
+          startupProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8081
+            periodSeconds: 2
+            failureThreshold: 60
+          # "Pode receber trafego?" DOWN durante o warm-up -> o Service nao roteia para este Pod.
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8081
+            periodSeconds: 3
+            failureThreshold: 2
+          # "O processo esta vivo?" Se falhar, o kubelet reinicia o container.
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8081
+            periodSeconds: 10
+            failureThreshold: 3

@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: monolith
+  labels:
+    app: monolith
+spec:
+  # Payment escala pela demanda de pagamentos. Poucas replicas bastam.
+  replicas: 2
+  selector:
+    matchLabels:
+      app: monolith
+  template:
+    metadata:
+      labels:
+        app: monolith
+    spec:
+      containers:
+        - name: monolith
+          image: techpix/monolith:local
+          imagePullPolicy: IfNotPresent   # kind load docker-image; nao ha registry
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: monolith-config
+          env:
+            - name: TECHPIX_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: techpix-db
+                  key: password
+          resources:
+            requests:
+              cpu: 250m
+              memory: 384Mi
+            limits:
+              cpu: "1"
+              memory: 512Mi
+          startupProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            periodSeconds: 2
+            failureThreshold: 60
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            periodSeconds: 10
