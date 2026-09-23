@@ -5,6 +5,7 @@ import com.techpix.account.Account;
 import com.techpix.account.AccountService;
 import com.techpix.fraud.FraudCheck;
 import com.techpix.fraud.FraudResult;
+import com.techpix.fraud.FraudUnavailableException;
 import com.techpix.fraud.FraudEvaluator;
 import com.techpix.ledger.LedgerService;
 import com.techpix.notification.NotificationService;
@@ -85,8 +86,17 @@ public class PaymentService {
         Payment payment = tx.execute(status -> registerPending(command));
 
         // Fase 2: sem transação. Fraud lê histórico e grava sua avaliação; nenhuma conexão fica presa entre consultas.
-        FraudResult result = fraud.evaluate(new FraudCheck(payment.id(), payment.payerAccountId(),
-                payment.payeeAccountId(), payment.amount(), payment.deviceId(), payment.createdAt()));
+        FraudResult result;
+        try {
+            result = fraud.evaluate(new FraudCheck(payment.id(), payment.payerAccountId(),
+                    payment.payeeAccountId(), payment.amount(), payment.deviceId(), payment.createdAt()));
+        } catch (FraudUnavailableException e) {
+            // Fail closed: sem decisão de Fraud, nenhum dinheiro se move. O cliente recebe 503 e pode tentar de novo.
+            // Antes da extração este bloco não existia. Uma chamada de método não "ficava indisponível".
+            tx.executeWithoutResult(status -> payments.updateStatus(payment.id(), PaymentStatus.REJECTED, "fraud unavailable"));
+            log.warn("payment={} status=REJECTED reason=fraud-unavailable detail={}", payment.id(), e.getMessage());
+            throw e;
+        }
 
         // Fase 3: transação curta. Liquida ou rejeita.
         Payment stored = tx.execute(status -> result.rejected() ? reject(payment, result) : settle(payment));

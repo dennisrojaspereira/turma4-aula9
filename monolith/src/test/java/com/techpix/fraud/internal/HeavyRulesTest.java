@@ -1,5 +1,6 @@
 package com.techpix.fraud.internal;
 
+import com.techpix.fraud.FraudMode;
 import com.techpix.fraud.FraudProfile;
 import com.techpix.fraud.FraudCheck;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -30,7 +31,7 @@ class HeavyRulesTest {
 
     @Test
     void mlScoringIsDeterministicForSameInput() {
-        MlScoringRule rule = new MlScoringRule(new FraudProperties(70, FraudProfile.HEAVY, 0, 10_000));
+        MlScoringRule rule = new MlScoringRule(props(10_000));
         FraudCheck check = check("123.45");
         assertThat(rule.evaluate(check)).isEqualTo(rule.evaluate(check));
     }
@@ -38,9 +39,14 @@ class HeavyRulesTest {
     @Test
     void mlScoringCostGrowsWithIterations() {
         FraudCheck check = check("123.45");
-        long cheap = timeOf(new MlScoringRule(new FraudProperties(70, FraudProfile.HEAVY, 0, 1_000)), check);
-        long expensive = timeOf(new MlScoringRule(new FraudProperties(70, FraudProfile.HEAVY, 0, 5_000_000)), check);
+        long cheap = timeOf(new MlScoringRule(props(1_000)), check);
+        long expensive = timeOf(new MlScoringRule(props(5_000_000)), check);
         assertThat(expensive).isGreaterThan(cheap);
+    }
+
+    private static FraudProperties props(int mlIterations) {
+        return new FraudProperties(70, FraudProfile.HEAVY, FraudMode.LEGACY, 0, mlIterations,
+                new FraudProperties.Remote("http://localhost:8081", 500, 2000));
     }
 
     private static long timeOf(MlScoringRule rule, FraudCheck check) {

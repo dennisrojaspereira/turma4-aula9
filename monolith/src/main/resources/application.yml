@@ -42,6 +42,12 @@ techpix:
     profile: ${TECHPIX_FRAUD_PROFILE:SIMPLE}
     provider-latency-ms: ${TECHPIX_FRAUD_PROVIDER_LATENCY_MS:30}
     ml-iterations: ${TECHPIX_FRAUD_ML_ITERATIONS:200000}
+    # Strangler Fig: LEGACY = Fraud in-process; NEW = Fraud Service remoto.
+    mode: ${TECHPIX_FRAUD_MODE:LEGACY}
+    remote:
+      url: ${TECHPIX_FRAUD_SERVICE_URL:http://localhost:8081}
+      connect-timeout-ms: ${TECHPIX_FRAUD_CONNECT_TIMEOUT_MS:500}
+      read-timeout-ms: ${TECHPIX_FRAUD_READ_TIMEOUT_MS:2000}
 
 logging:
   level:
