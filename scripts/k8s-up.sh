@@ -7,11 +7,13 @@ cd "$(dirname "$0")/.."
 SOURCE="${1:-raw}"
 OVERLAY="${2:-dev}"
 
+EXISTED=false
 if ! kind get clusters 2>/dev/null | grep -qx techpix; then
   echo "== criando cluster kind 'techpix'"
   kind create cluster --config kubernetes/kind-config.yaml --wait 60s
 else
   echo "== cluster kind 'techpix' ja existe"
+  EXISTED=true
 fi
 kubectl config use-context kind-techpix >/dev/null
 
@@ -33,6 +35,13 @@ case "$SOURCE" in
           case "$OVERLAY" in dev) PORT=8090 ;; qa) PORT=8092 ;; prod) PORT=8094 ;; esac ;;
   *) echo "uso: $0 [raw|gitops [dev|qa|prod]]"; exit 1 ;;
 esac
+
+if [ "$EXISTED" = true ]; then
+  # A tag da imagem nao muda (":local"), entao um Pod antigo nao pega a imagem nova sozinho.
+  # Reciclar os Pods da aplicacao garante imagem nova e Flyway rodando de novo se o Postgres foi recriado.
+  echo "== reciclando Pods da aplicacao (imagem nova, mesma tag)"
+  kubectl -n "$NS" delete pod -l 'app in (monolith,fraud-service)' --wait=false >/dev/null 2>&1 || true
+fi
 
 echo "== aguardando rollout (namespace $NS)"
 kubectl -n "$NS" rollout status deployment/postgres --timeout=120s

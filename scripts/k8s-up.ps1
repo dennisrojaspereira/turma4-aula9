@@ -31,6 +31,10 @@ else {
     $port = switch ($Overlay) { "dev" { 8090 } "qa" { 8092 } "prod" { 8094 } }
 }
 
+if ($clusters -contains "techpix") {
+    # Mesma tag ":local": recicla os Pods para pegarem a imagem nova (e rodarem o Flyway se o Postgres foi recriado).
+    kubectl -n $ns delete pod -l 'app in (monolith,fraud-service)' --wait=false 2>$null | Out-Null
+}
 kubectl -n $ns rollout status deployment/postgres --timeout=120s
 kubectl -n $ns rollout status deployment/monolith --timeout=300s
 kubectl -n $ns rollout status deployment/fraud-service --timeout=300s
