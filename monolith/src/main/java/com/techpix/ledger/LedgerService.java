@@ -1,5 +1,6 @@
 package com.techpix.ledger;
 
+import com.techpix.ledger.internal.LedgerRepository;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;

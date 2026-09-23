@@ -1,10 +1,11 @@
 package com.techpix.payment;
 
+import com.techpix.payment.internal.PaymentRepository;
 import com.techpix.account.Account;
 import com.techpix.account.AccountService;
 import com.techpix.fraud.FraudCheck;
 import com.techpix.fraud.FraudResult;
-import com.techpix.fraud.FraudService;
+import com.techpix.fraud.FraudEvaluator;
 import com.techpix.ledger.LedgerService;
 import com.techpix.notification.NotificationService;
 import com.techpix.shared.DomainException;
@@ -53,7 +54,7 @@ public class PaymentService {
 
     private final PaymentRepository payments;
     private final AccountService accounts;
-    private final FraudService fraud;
+    private final FraudEvaluator fraud;
     private final LedgerService ledger;
     private final NotificationService notifications;
     private final Clock clock;
@@ -61,7 +62,7 @@ public class PaymentService {
     private final Timer paymentTimer;
     private final DistributionSummary paymentQueries;
 
-    public PaymentService(PaymentRepository payments, AccountService accounts, FraudService fraud,
+    public PaymentService(PaymentRepository payments, AccountService accounts, FraudEvaluator fraud,
                           LedgerService ledger, NotificationService notifications, Clock clock,
                           PlatformTransactionManager transactionManager, MeterRegistry metrics) {
         this.payments = payments;

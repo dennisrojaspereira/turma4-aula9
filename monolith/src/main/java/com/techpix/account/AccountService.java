@@ -1,5 +1,6 @@
 package com.techpix.account;
 
+import com.techpix.account.internal.AccountRepository;
 import com.techpix.shared.DomainException;
 import java.math.BigDecimal;
 import java.time.Clock;

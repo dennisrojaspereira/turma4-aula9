@@ -3,7 +3,7 @@ package com.techpix.observability;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.techpix.fraud.FraudProfile;
-import com.techpix.fraud.FraudProfileConfig;
+import com.techpix.fraud.internal.FraudProfileConfig;
 import com.techpix.support.AbstractIntegrationTest;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Map;

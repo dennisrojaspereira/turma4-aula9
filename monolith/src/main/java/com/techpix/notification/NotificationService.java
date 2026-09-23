@@ -1,5 +1,6 @@
 package com.techpix.notification;
 
+import com.techpix.notification.internal.NotificationRepository;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
