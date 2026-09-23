@@ -37,6 +37,7 @@ class PaymentEventsIT extends AbstractIntegrationTest {
     static void kafka(DynamicPropertyRegistry registry) {
         registry.add("techpix.events.enabled", () -> "true");
         registry.add("spring.kafka.bootstrap-servers", KAFKA::getBootstrapServers);
+        registry.add("techpix.ledger.fail-amount", () -> "13.37");
     }
 
     @Test
@@ -79,6 +80,24 @@ class PaymentEventsIT extends AbstractIntegrationTest {
                 .map(e -> e.get("eventId").asText()).toList();
         assertThat(ids).hasSize(2);
         assertThat(ids.get(0)).isEqualTo(ids.get(1));
+    }
+
+    @Test
+    void ledgerFailureAfterFraudIsCompensatedWithPaymentFailed() throws Exception {
+        // Saga: Fraud aprovou e registrou (no banco DELE). O ledger falha. Nao ha rollback distribuido; ha compensacao.
+        UUID alice = openAccount("Saga Alice", "1000.00");
+        UUID bob = openAccount("Saga Bob", "0.00");
+
+        ResponseEntity<Map> response = pay(alice, bob, "13.37", "d");
+
+        assertThat(response.getStatusCode()).isEqualTo(org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE);
+        // Nenhum dinheiro se moveu: a transacao local do ledger foi desfeita.
+        assertThat(http.getForObject("/accounts/" + alice, Map.class).get("balance")).isEqualTo(1000.0);
+        List<JsonNode> events = consumeAll(alice);
+        JsonNode failed = events.stream().filter(e -> "PaymentFailed".equals(e.get("type").asText())).findFirst().orElseThrow();
+        assertThat(failed.get("amount").decimalValue()).isEqualByComparingTo("13.37");
+        UUID paymentId = UUID.fromString(failed.get("paymentId").asText());
+        assertThat(http.getForObject("/payments/" + paymentId, Map.class).get("status")).isEqualTo("FAILED");
     }
 
     private static List<JsonNode> consumeAll(UUID payerKey) throws Exception {

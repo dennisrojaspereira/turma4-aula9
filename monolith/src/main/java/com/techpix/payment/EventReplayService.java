@@ -26,7 +26,12 @@ public class EventReplayService {
         if (payment.status() == PaymentStatus.PENDING) {
             throw DomainException.unprocessable("payment " + paymentId + " is still PENDING; nothing to replay");
         }
-        PaymentEvent.Type type = payment.status() == PaymentStatus.APPROVED ? PaymentEvent.Type.PaymentApproved : PaymentEvent.Type.PaymentRejected;
+        PaymentEvent.Type type = switch (payment.status()) {
+            case APPROVED -> PaymentEvent.Type.PaymentApproved;
+            case REJECTED -> PaymentEvent.Type.PaymentRejected;
+            case FAILED -> PaymentEvent.Type.PaymentFailed;
+            case PENDING -> throw new IllegalStateException("unreachable");
+        };
         PaymentEvent event = PaymentEvent.of(type, payment, accounts.get(payment.payerAccountId()).createdAt());
         events.publish(event);
         return Map.of("replayed", event.type(), "eventId", event.eventId(), "paymentId", paymentId);

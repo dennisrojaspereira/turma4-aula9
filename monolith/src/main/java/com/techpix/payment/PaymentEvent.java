@@ -26,7 +26,9 @@ public record PaymentEvent(
         Instant occurredAt) {
 
     public enum Type {
-        PaymentApproved, PaymentRejected
+        PaymentApproved, PaymentRejected,
+        /** Compensacao (lab 20): a liquidacao falhou depois de Fraud ja ter registrado o pagamento. */
+        PaymentFailed
     }
 
     public static PaymentEvent of(Type type, Payment payment, Instant payerAccountOpenedAt) {

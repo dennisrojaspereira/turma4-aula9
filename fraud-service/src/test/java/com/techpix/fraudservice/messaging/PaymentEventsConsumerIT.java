@@ -54,6 +54,26 @@ class PaymentEventsConsumerIT extends AbstractFraudEventsIT {
     }
 
     @Test
+    void compensationMarksTheEvaluatedPaymentAsFailedWithoutPenalizingThePayer() {
+        UUID payer = UUID.randomUUID();
+        UUID payee = quietPayee();
+        // 1. Fraud avaliou e registrou o pagamento (EVALUATED) no banco DELE.
+        ResponseEntity<Map> evaluation = evaluate(payer, payee, "13.37", NOW);
+        UUID paymentId = UUID.fromString((String) evaluation.getBody().get("paymentId"));
+        assertThat(historyCount(payer, "EVALUATED")).isEqualTo(1);
+
+        // 2. Payment nao conseguiu liquidar e publicou a compensacao.
+        publish(failed(UUID.randomUUID(), paymentId, payer, payee, "13.37", NOW));
+
+        // 3. Fraud desfaz o que registrou: o pagamento vira FAILED. Nao conta como rejeicao de fraude.
+        await().atMost(Duration.ofSeconds(20)).untilAsserted(() -> assertThat(historyCount(payer, "FAILED")).isEqualTo(1));
+        assertThat(historyCount(payer, "EVALUATED")).isZero();
+        Map activity = http.getForObject("/admin/fraud/accounts/" + payer + "/activity", Map.class);
+        assertThat(activity.get("rejectedCount")).isEqualTo(0);
+        assertThat(activity.get("approvedCount")).isEqualTo(0);
+    }
+
+    @Test
     void evaluationRegistersInFlightPaymentsBeforeAnyEvent() {
         UUID payer = UUID.randomUUID();
         UUID payee = quietPayee();

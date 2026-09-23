@@ -13,7 +13,7 @@ class CanaryRouterTest {
 
     private static CanaryRouter router(int percentage) {
         return new CanaryRouter(new FraudProperties(70, FraudProfile.SIMPLE, FraudMode.LEGACY, 0, 1,
-                new FraudProperties.Remote("http://x", 1, 1), new FraudProperties.Parallel(1, 1, 1),
+                new FraudProperties.Remote("http://x", 1, 1, new FraudProperties.Retry(1, 0, 0, 0)), new FraudProperties.Parallel(1, 1, 1),
                 new FraudProperties.Canary(percentage)));
     }
 

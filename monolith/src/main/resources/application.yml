@@ -45,6 +45,9 @@ management:
         fraud.rule: 0.5,0.95
 
 techpix:
+  ledger:
+    # Lab 20: um valor "magico" faz o ledger falhar DEPOIS de Fraud ter decidido. Vazio = desligado.
+    fail-amount: ${TECHPIX_LEDGER_FAIL_AMOUNT:}
   events:
     # Lab 19: publica PaymentApproved/PaymentRejected no Kafka. Desligado, os eventos viram log.
     enabled: ${TECHPIX_EVENTS_ENABLED:false}
@@ -66,6 +69,12 @@ techpix:
       url: ${TECHPIX_FRAUD_SERVICE_URL:http://localhost:8081}
       connect-timeout-ms: ${TECHPIX_FRAUD_CONNECT_TIMEOUT_MS:500}
       read-timeout-ms: ${TECHPIX_FRAUD_READ_TIMEOUT_MS:2000}
+      # Lab 20: retry limitado com backoff exponencial e jitter. 1 tentativa = sem retry.
+      retry:
+        max-attempts: ${TECHPIX_FRAUD_RETRY_ATTEMPTS:3}
+        base-backoff-ms: 100
+        max-backoff-ms: 1000
+        jitter: 0.2
 
 logging:
   level:

@@ -102,7 +102,19 @@ public class PaymentService {
         }
 
         // Fase 3: transação curta. Liquida ou rejeita.
-        Payment stored = tx.execute(status -> result.rejected() ? reject(payment, result) : settle(payment));
+        Payment stored;
+        try {
+            stored = tx.execute(status -> result.rejected() ? reject(payment, result) : settle(payment));
+        } catch (LedgerService.LedgerUnavailableException e) {
+            // Saga, na forma mais simples que existe: transacao local falhou DEPOIS de outro servico (Fraud) ja
+            // ter registrado este pagamento no banco dele. Nao ha rollback distribuido. Ha compensacao:
+            // marcamos FAILED aqui e publicamos o fato; Fraud ouve e desfaz o que registrou.
+            tx.executeWithoutResult(status -> payments.updateStatus(payment.id(), PaymentStatus.FAILED, "ledger: " + e.getMessage()));
+            Payment failed = payments.findById(payment.id()).orElseThrow();
+            events.publish(PaymentEvent.of(PaymentEvent.Type.PaymentFailed, failed, accounts.get(failed.payerAccountId()).createdAt()));
+            log.error("payment={} status=FAILED reason=ledger-unavailable compensation=PaymentFailed", payment.id());
+            throw new DomainException(org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE, "payment failed: " + e.getMessage());
+        }
 
         // Fase 4: conta ao mundo o que aconteceu. Depois do commit: um fato só é publicado se for verdade.
         events.publish(PaymentEvent.of(

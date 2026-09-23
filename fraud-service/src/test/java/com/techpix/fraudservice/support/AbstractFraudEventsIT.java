@@ -66,6 +66,10 @@ public abstract class AbstractFraudEventsIT {
         return fact("PaymentRejected", eventId, paymentId, payer, payee, amount, at);
     }
 
+    protected static Map<String, Object> failed(UUID eventId, UUID paymentId, UUID payer, UUID payee, String amount, Instant at) {
+        return fact("PaymentFailed", eventId, paymentId, payer, payee, amount, at);
+    }
+
     private static Map<String, Object> fact(String type, UUID eventId, UUID paymentId, UUID payer, UUID payee, String amount, Instant at) {
         Map<String, Object> m = new java.util.LinkedHashMap<>();
         m.put("eventId", eventId);

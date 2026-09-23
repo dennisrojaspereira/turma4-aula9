@@ -29,4 +29,9 @@ public record PaymentEventMessage(
     public boolean isRejected() {
         return "PaymentRejected".equals(type);
     }
+
+    /** Compensacao: a liquidacao falhou por infraestrutura. Nao e fraude; nao penaliza o pagador. */
+    public boolean isFailed() {
+        return "PaymentFailed".equals(type);
+    }
 }

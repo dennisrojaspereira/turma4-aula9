@@ -39,7 +39,8 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
-      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      # Topicos sao criados pelas aplicacoes (3 particoes). Auto-create criaria com 1 e confundiria o consumidor.
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
       CLUSTER_ID: techpix-kraft-cluster-0001
     ports:
       - "9094:9094"     # da maquina: localhost:9094. Entre containers: kafka:9092

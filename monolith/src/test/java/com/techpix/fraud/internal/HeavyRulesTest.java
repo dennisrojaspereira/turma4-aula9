@@ -46,7 +46,7 @@ class HeavyRulesTest {
 
     private static FraudProperties props(int mlIterations) {
         return new FraudProperties(70, FraudProfile.HEAVY, FraudMode.LEGACY, 0, mlIterations,
-                new FraudProperties.Remote("http://localhost:8081", 500, 2000), new FraudProperties.Parallel(1500, 2, 10), new FraudProperties.Canary(0));
+                new FraudProperties.Remote("http://localhost:8081", 500, 2000, new FraudProperties.Retry(1, 0, 0, 0)), new FraudProperties.Parallel(1500, 2, 10), new FraudProperties.Canary(0));
     }
 
     private static long timeOf(MlScoringRule rule, FraudCheck check) {

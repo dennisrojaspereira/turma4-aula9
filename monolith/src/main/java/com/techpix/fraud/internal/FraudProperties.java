@@ -30,11 +30,26 @@ public record FraudProperties(
      * @param url              endereço base do Fraud Service
      * @param connectTimeoutMs quanto esperar para abrir a conexão
      * @param readTimeoutMs    quanto esperar pela resposta
+     * @param retry            política de retry (lab 20)
      */
     public record Remote(
             @DefaultValue("http://localhost:8081") String url,
             @DefaultValue("500") long connectTimeoutMs,
-            @DefaultValue("2000") long readTimeoutMs) {
+            @DefaultValue("2000") long readTimeoutMs,
+            @DefaultValue Retry retry) {
+    }
+
+    /**
+     * @param maxAttempts   tentativas no total (1 = sem retry)
+     * @param baseBackoffMs espera antes da 2a tentativa; dobra a cada tentativa
+     * @param maxBackoffMs  teto da espera
+     * @param jitter        variação aleatória (0.2 = ±20%)
+     */
+    public record Retry(
+            @DefaultValue("3") int maxAttempts,
+            @DefaultValue("100") long baseBackoffMs,
+            @DefaultValue("1000") long maxBackoffMs,
+            @DefaultValue("0.2") double jitter) {
     }
 
     /**

@@ -20,12 +20,28 @@ public class FraudAdminController {
     public record IdempotencyRequest(boolean enabled) {
     }
 
+    public record ChaosRequest(long latencyMs, double errorRate) {
+    }
+
     private final ObjectProvider<LocalViewUpdater> updater;
     private final ObjectProvider<ProcessedEvents> processedEvents;
+    private final ChaosFilter chaos;
 
-    public FraudAdminController(ObjectProvider<LocalViewUpdater> updater, ObjectProvider<ProcessedEvents> processedEvents) {
+    public FraudAdminController(ObjectProvider<LocalViewUpdater> updater, ObjectProvider<ProcessedEvents> processedEvents, ChaosFilter chaos) {
         this.updater = updater;
         this.processedEvents = processedEvents;
+        this.chaos = chaos;
+    }
+
+    @GetMapping("/chaos")
+    public Map<String, Object> chaos() {
+        return chaos.status();
+    }
+
+    @PutMapping("/chaos")
+    public Map<String, Object> changeChaos(@RequestBody ChaosRequest request) {
+        chaos.set(new ChaosFilter.Chaos(request.latencyMs(), request.errorRate()));
+        return chaos.status();
     }
 
     @GetMapping("/accounts/{accountId}/activity")

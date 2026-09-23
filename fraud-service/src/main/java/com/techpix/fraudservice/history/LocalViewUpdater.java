@@ -69,7 +69,7 @@ public class LocalViewUpdater {
             log.info("event {} payment={} eventId={} DUPLICADO, ignorado", event.type(), event.paymentId(), event.eventId());
             return false;
         }
-        String status = event.isApproved() ? "APPROVED" : event.isRejected() ? "REJECTED" : "UNKNOWN";
+        String status = event.isApproved() ? "APPROVED" : event.isRejected() ? "REJECTED" : event.isFailed() ? "FAILED" : "UNKNOWN";
         Timestamp now = Timestamp.from(Instant.now(clock));
         jdbc.sql("""
                 INSERT INTO payment_history (payment_id, payer_account_id, payee_account_id, amount, device_id, status, payer_opened_at, occurred_at, updated_at)
