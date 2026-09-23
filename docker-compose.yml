@@ -1,0 +1,35 @@
+# Tech Pix, etapa 1: um monólito e um banco. Só isso.
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: techpix-postgres
+    environment:
+      POSTGRES_DB: techpix
+      POSTGRES_USER: techpix
+      POSTGRES_PASSWORD: techpix
+    ports:
+      - "5432:5432"
+    volumes:
+      - techpix-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U techpix -d techpix"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  monolith:
+    build:
+      context: ./monolith
+    image: techpix/monolith:local
+    container_name: techpix-monolith
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      TECHPIX_DB_HOST: postgres
+    ports:
+      - "8080:8080"
+    profiles: ["app"]
+
+volumes:
+  techpix-pgdata:

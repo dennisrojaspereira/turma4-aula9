@@ -1,0 +1,31 @@
+spring:
+  application:
+    name: techpix-monolith
+  datasource:
+    url: jdbc:postgresql://${TECHPIX_DB_HOST:localhost}:${TECHPIX_DB_PORT:5432}/${TECHPIX_DB_NAME:techpix}
+    username: ${TECHPIX_DB_USER:techpix}
+    password: ${TECHPIX_DB_PASSWORD:techpix}
+    hikari:
+      maximum-pool-size: ${TECHPIX_DB_POOL:10}
+  flyway:
+    enabled: true
+
+server:
+  port: ${SERVER_PORT:8080}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+
+techpix:
+  fraud:
+    reject-threshold: 70
+
+logging:
+  level:
+    com.techpix: INFO

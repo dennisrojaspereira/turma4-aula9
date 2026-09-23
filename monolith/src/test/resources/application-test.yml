@@ -1,0 +1,5 @@
+logging:
+  level:
+    com.techpix: DEBUG
+    org.testcontainers: WARN
+    com.github.dockerjava: WARN
