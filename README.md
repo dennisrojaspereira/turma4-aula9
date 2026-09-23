@@ -33,6 +33,7 @@ Os laboratórios em [docs/labs/](docs/labs/) seguem a evolução do sistema. Cad
 |---|---|
 | [01 — O monólito que funciona](docs/labs/01-working-monolith.md) | `aula07-step-01-monolith` |
 | [02 — O crescimento muda o problema](docs/labs/02-growing-load.md) | `aula07-step-02-growth` |
+| [03 — Sintoma não é causa](docs/labs/03-investigating-performance.md) | `aula07-step-03-observability` |
 
 ## Decisões
 

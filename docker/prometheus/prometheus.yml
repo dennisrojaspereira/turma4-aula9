@@ -1,0 +1,18 @@
+global:
+  scrape_interval: 5s
+
+scrape_configs:
+  # Monolito rodando pelo Maven na maquina do aluno (host) ou em container (profile app).
+  - job_name: techpix-monolith
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ["host.docker.internal:8080", "monolith:8080"]
+        labels:
+          app: monolith
+  # Fraud Service, quando existir (a partir do lab 08).
+  - job_name: techpix-fraud-service
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ["host.docker.internal:8081", "fraud-service:8081"]
+        labels:
+          app: fraud-service

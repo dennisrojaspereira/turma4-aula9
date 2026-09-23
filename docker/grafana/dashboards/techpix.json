@@ -1,0 +1,50 @@
+{
+  "title": "Tech Pix — Payment vs Fraud",
+  "uid": "techpix",
+  "schemaVersion": 39,
+  "refresh": "5s",
+  "time": { "from": "now-15m", "to": "now" },
+  "panels": [
+    {
+      "id": 1, "type": "timeseries", "title": "Latência p95: Payment vs Fraud",
+      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
+      "fieldConfig": { "defaults": { "unit": "s" } },
+      "targets": [
+        { "expr": "histogram_quantile(0.95, sum(rate(payment_create_seconds_bucket[1m])) by (le))", "legendFormat": "payment p95" },
+        { "expr": "histogram_quantile(0.95, sum(rate(fraud_evaluation_seconds_bucket[1m])) by (le))", "legendFormat": "fraud p95" }
+      ]
+    },
+    {
+      "id": 2, "type": "timeseries", "title": "Throughput (pagamentos/s)",
+      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
+      "targets": [
+        { "expr": "sum(rate(payment_create_seconds_count[1m]))", "legendFormat": "payments/s" }
+      ]
+    },
+    {
+      "id": 3, "type": "timeseries", "title": "Consultas SQL por pagamento (média)",
+      "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
+      "targets": [
+        { "expr": "rate(payment_queries_sum[1m]) / rate(payment_queries_count[1m])", "legendFormat": "queries/payment" }
+      ]
+    },
+    {
+      "id": 4, "type": "timeseries", "title": "Pool de conexões (HikariCP)",
+      "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 },
+      "targets": [
+        { "expr": "hikaricp_connections_active", "legendFormat": "active" },
+        { "expr": "hikaricp_connections_pending", "legendFormat": "pending (esperando)" },
+        { "expr": "hikaricp_connections_max", "legendFormat": "max" }
+      ]
+    },
+    {
+      "id": 5, "type": "bargauge", "title": "Tempo por regra de Fraud (p95)",
+      "gridPos": { "x": 0, "y": 16, "w": 24, "h": 10 },
+      "fieldConfig": { "defaults": { "unit": "s" } },
+      "options": { "orientation": "horizontal", "displayMode": "gradient" },
+      "targets": [
+        { "expr": "histogram_quantile(0.95, sum(rate(fraud_rule_seconds_bucket[2m])) by (le, rule))", "legendFormat": "{{rule}}", "instant": true }
+      ]
+    }
+  ]
+}

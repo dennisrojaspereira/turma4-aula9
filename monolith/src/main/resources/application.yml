@@ -20,10 +20,20 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics
+        include: health,info,metrics,prometheus
   endpoint:
     health:
       show-details: always
+  metrics:
+    distribution:
+      percentiles-histogram:
+        payment.create: true
+        fraud.evaluation: true
+        fraud.rule: true
+      percentiles:
+        payment.create: 0.5,0.95,0.99
+        fraud.evaluation: 0.5,0.95,0.99
+        fraud.rule: 0.5,0.95
 
 techpix:
   fraud:
@@ -36,3 +46,5 @@ techpix:
 logging:
   level:
     com.techpix: INFO
+    # DEBUG mostra uma linha por regra de Fraud; util para investigar, ruidoso sob carga.
+    com.techpix.fraud: ${TECHPIX_FRAUD_LOG_LEVEL:INFO}
