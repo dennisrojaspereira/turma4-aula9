@@ -1,0 +1,294 @@
+#!/usr/bin/env python3
+# Painel da Aula 07: uma pagina local com botoes que executam os scripts da demo.
+#   python scripts/painel.py   ->  http://localhost:8099
+# So aceita conexoes de 127.0.0.1 e so executa os comandos da lista ACTIONS.
+import os
+import re
+import subprocess
+import sys
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+PORT = 8099
+# O bash do WSL (System32) nao serve; usamos o do Git for Windows.
+BASH = next(
+    (p for p in (
+        r"C:\Program Files\Git\bin\bash.exe",
+        r"C:\Program Files (x86)\Git\bin\bash.exe",
+    ) if os.path.exists(p)),
+    "bash",
+)
+ENV = {
+    **os.environ,
+    "TECHPIX_URL": "http://localhost:8090",
+    "FRAUD_URL": "http://localhost:8091",
+    "TECHPIX_GIT_URL": "http://host.docker.internal:3001/techpix/tech-pix.git",
+    "MSYS_NO_PATHCONV": "1",
+}
+
+KAFKA_TAIL = (
+    "kubectl -n techpix-dev exec deploy/kafka -- /opt/kafka/bin/kafka-console-consumer.sh "
+    "--bootstrap-server localhost:9092 --topic payment-events --from-beginning "
+    "--property print.key=true --property 'key.separator= | ' --timeout-ms 8000 2>&1 "
+    "| grep -Ev 'TimeoutException|ERROR Error processing' || true"
+)
+
+# id -> (rotulo, comando bash). A pagina agrupa por secao, na ordem da aula.
+ACTIONS = {
+    # Status
+    "pods":            ("Pods de dev", "kubectl -n techpix-dev get pods -o wide"),
+    "envs":            ("Os 3 ambientes (dev/qa/prod)", "for ns in techpix-dev techpix-qa techpix-prod; do echo \"== $ns\"; kubectl -n $ns get deploy; echo; done"),
+    "targets":         ("Targets do Prometheus", "curl -s http://localhost:9090/api/v1/targets | python -c \"import json,sys; d=json.load(sys.stdin); [print(t['labels'].get('app'), t['scrapeUrl'], '->', t['health']) for t in d['data']['activeTargets']]\""),
+    # Demo basica
+    "demo":            ("Fazer um pagamento", "bash scripts/demo-payment.sh"),
+    "seed":            ("Seed: 2.000 contas, 200.000 pagamentos", "bash scripts/seed.sh"),
+    "metrics":         ("Onde o tempo e gasto (Actuator)", "bash scripts/show-metrics.sh"),
+    # Carga
+    "burst":           ("Rajada: 20 pagamentos", "for i in $(seq 1 20); do bash scripts/demo-payment.sh >/dev/null 2>&1; echo \"pagamento $i ok\"; done"),
+    "load-baseline":   ("k6 baseline (5 VUs, 30s)", "bash scripts/load-test.sh baseline"),
+    "load-growth":     ("k6 growth (40 VUs, 60s)", "bash scripts/load-test.sh growth"),
+    # Strangler / modos
+    "mode":            ("Modo atual", "bash scripts/fraud-mode.sh"),
+    "mode-legacy":     ("LEGACY (rollback total)", "bash scripts/fraud-mode.sh LEGACY"),
+    "mode-parallel":   ("PARALLEL (parallel run)", "bash scripts/fraud-mode.sh PARALLEL"),
+    "parallel-report": ("Relatorio do parallel run", "bash scripts/parallel-run-report.sh"),
+    "mode-new":        ("NEW (100% Fraud Service)", "bash scripts/fraud-mode.sh NEW"),
+    "rollback":        ("Rollback", "bash scripts/rollback.sh"),
+    # Canary
+    "canary-10":       ("Canary 10%", "bash scripts/canary.sh 10"),
+    "canary-50":       ("Canary 50%", "bash scripts/canary.sh 50"),
+    "canary-100":      ("Canary 100%", "bash scripts/canary.sh 100"),
+    "canary-status":   ("Status do canary", "bash scripts/canary-status.sh"),
+    # Escala
+    "hpa-prod":        ("HPA do prod", "kubectl -n techpix-prod get hpa"),
+    "top":             ("kubectl top pods (dev)", "kubectl -n techpix-dev top pods || echo 'metrics-server ainda sem dados'"),
+    # Kafka
+    "kafka-tail":      ("Eventos de payment-events (8s)", KAFKA_TAIL),
+    # Caos (lab 20)
+    "chaos-latency":   ("Latencia +800ms no Fraud", "bash scripts/chaos.sh latency 800"),
+    "chaos-errors":    ("50% de erros no Fraud", "bash scripts/chaos.sh errors 0.5"),
+    "chaos-off":       ("Desligar o caos", "bash scripts/chaos.sh off"),
+    "chaos-status":    ("Status do caos", "bash scripts/chaos.sh"),
+    # GitOps / Argo CD
+    "argocd-apps":     ("Status das Applications", "kubectl -n argocd get applications"),
+    "drift":           ("Drift demo: escala na mao, Argo desfaz", "bash scripts/argocd-drift-demo.sh"),
+    "argocd-forward":  ("Reabrir UI (port-forward 8443)", "(kubectl -n argocd port-forward svc/argocd-server 8443:443 >/dev/null 2>&1 &) && echo 'UI: https://localhost:8443  usuario: admin' && sleep 1"),
+    "argocd-pass":     ("Senha do admin", "kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d && echo"),
+    "gitea-push":      ("Push de novos commits para o Gitea", "bash scripts/local-git-server.sh push"),
+    # Istio
+    "istio-sidecars":  ("Sidecars (2/2 = no mesh)", "kubectl -n techpix-dev get pods"),
+    "istio-vs":        ("VirtualService ativo", "kubectl -n techpix-dev get virtualservice -o yaml 2>/dev/null | grep -E 'name:|fault:|fixedDelay|httpStatus|value:|timeout:|attempts:' || echo 'nenhum VirtualService ativo'"),
+    "istio-delay":     ("Mesh: +800ms no Fraud + pagamento", "kubectl apply -f istio/fault-delay.yaml && echo && echo '-> pagamento com o atraso injetado pelo sidecar:' && bash scripts/demo-payment.sh"),
+    "istio-abort":     ("Mesh: 50% de erros 500 + pagamento", "kubectl apply -f istio/fault-abort.yaml && echo && bash scripts/demo-payment.sh"),
+    "istio-resilience":("Mesh: retry 2x + timeout 2s", "kubectl apply -f istio/resilience.yaml && kubectl -n techpix-dev get virtualservice"),
+    "istio-off":       ("Desligar o mesh (remover VS)", "kubectl -n techpix-dev delete virtualservice fraud-service --ignore-not-found && echo 'VirtualService removido'"),
+    # Historia
+    "steps":           ("Listar as 14 etapas (tags)", "git tag -l 'aula07-*'"),
+}
+
+SECTIONS = [
+    ("Status", ["pods", "envs", "targets"]),
+    ("Demo básica", ["demo", "seed", "metrics"]),
+    ("Carga (k6)", ["burst", "load-baseline", "load-growth"]),
+    ("Strangler — modos", ["mode", "mode-legacy", "mode-parallel", "parallel-report", "mode-new", "rollback"]),
+    ("Canary", ["canary-10", "canary-50", "canary-100", "canary-status"]),
+    ("Escala", ["hpa-prod", "top"]),
+    ("Kafka", ["kafka-tail"]),
+    ("Caos — lab 20 (em código)", ["chaos-latency", "chaos-errors", "chaos-off", "chaos-status"]),
+    ("Istio — lab 20 pelo mesh", ["istio-sidecars", "istio-delay", "istio-abort", "istio-resilience", "istio-vs", "istio-off"]),
+    ("GitOps / Argo CD", ["argocd-apps", "drift", "argocd-forward", "argocd-pass", "gitea-push"]),
+    ("História", ["steps"]),
+]
+
+LINKS = [
+    ("Monólito dev", "http://localhost:8090/actuator/health"),
+    ("Fraud dev", "http://localhost:8091/actuator/health/readiness"),
+    ("QA", "http://localhost:8092/actuator/health"),
+    ("Prod", "http://localhost:8094/actuator/health"),
+    ("Prometheus", "http://localhost:9090/targets"),
+    ("Grafana", "http://localhost:3000/d/techpix"),
+    ("Argo CD", "https://localhost:8443"),
+    ("Gitea", "http://localhost:3001/techpix/tech-pix"),
+]
+
+PAGE = """<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Painel Aula 07</title>
+<style>
+  :root {
+    --bg: #0d1117; --surface: #161b22; --border: #30363d;
+    --text: #e6edf3; --muted: #8b949e; --accent: #2f81f7; --green: #3fb950;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: "Segoe UI", system-ui, sans-serif; }
+  header { padding: 1.2rem 2rem; border-bottom: 1px solid var(--border); background: var(--surface);
+           display: flex; align-items: baseline; gap: 1rem; flex-wrap: wrap; }
+  header h1 { font-size: 1.3rem; }
+  header span { color: var(--muted); font-size: .9rem; }
+  .layout { display: grid; grid-template-columns: 340px 1fr; gap: 0; height: calc(100vh - 64px); }
+  .menu { overflow-y: auto; border-right: 1px solid var(--border); padding: 1rem; }
+  .menu h2 { font-size: .75rem; text-transform: uppercase; letter-spacing: .08em;
+             color: var(--muted); margin: 1.1rem 0 .4rem; }
+  .menu h2:first-child { margin-top: 0; }
+  button.act { display: block; width: 100%; text-align: left; margin: .25rem 0; padding: .5rem .7rem;
+               background: var(--surface); color: var(--text); border: 1px solid var(--border);
+               border-radius: 6px; cursor: pointer; font-size: .88rem; }
+  button.act:hover { border-color: var(--accent); }
+  button.act:disabled { opacity: .45; cursor: wait; }
+  .k6form { display: flex; gap: .4rem; margin: .25rem 0; align-items: center; }
+  .k6form input { width: 4.5rem; padding: .45rem .5rem; background: var(--bg); color: var(--text);
+                  border: 1px solid var(--border); border-radius: 6px; font-size: .88rem; }
+  .k6form button { flex: 1; margin: 0; }
+  .k6form label { font-size: .78rem; color: var(--muted); }
+  .links { padding: .6rem 2rem; border-bottom: 1px solid var(--border); display: flex; gap: 1.2rem; flex-wrap: wrap; }
+  .links a { color: var(--accent); text-decoration: none; font-size: .88rem; }
+  .links a:hover { text-decoration: underline; }
+  .out-wrap { display: flex; flex-direction: column; min-width: 0; }
+  .out-head { padding: .5rem 1.2rem; font-size: .85rem; color: var(--muted);
+              border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; }
+  .out-head .running { color: var(--green); }
+  pre { flex: 1; overflow: auto; padding: 1rem 1.2rem; font-family: Consolas, Menlo, monospace;
+        font-size: .82rem; line-height: 1.45; white-space: pre-wrap; word-break: break-word; }
+  pre .cmd { color: var(--accent); }
+  @media (max-width: 800px) { .layout { grid-template-columns: 1fr; height: auto; }
+                              pre { min-height: 40vh; } }
+</style>
+</head>
+<body>
+<header><h1>Tech Pix — Painel da Aula 07</h1><span>clique numa etapa; a saída aparece ao lado</span></header>
+<div class="links">__LINKS__</div>
+<div class="layout">
+  <nav class="menu">__MENU__</nav>
+  <div class="out-wrap">
+    <div class="out-head"><span id="label">pronto</span><span id="state"></span></div>
+    <pre id="out">Bem-vindo! Clique em "Pods do cluster" para começar.</pre>
+  </div>
+</div>
+<script>
+const out = document.getElementById('out');
+const label = document.getElementById('label');
+const state = document.getElementById('state');
+let running = false;
+async function run(id, name) {
+  if (running) return;
+  running = true;
+  document.querySelectorAll('button.act').forEach(b => b.disabled = true);
+  label.textContent = name;
+  state.textContent = 'executando...';
+  state.className = 'running';
+  out.textContent = '';
+  try {
+    const r = await fetch('/run/' + id, { method: 'POST' });
+    const reader = r.body.getReader();
+    const dec = new TextDecoder();
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      out.textContent += dec.decode(value, { stream: true });
+      out.scrollTop = out.scrollHeight;
+    }
+  } catch (e) {
+    out.textContent += '\\n[erro de conexão: ' + e + ']';
+  }
+  state.textContent = 'concluído';
+  state.className = '';
+  running = false;
+  document.querySelectorAll('button.act').forEach(b => b.disabled = false);
+}
+function runK6() {
+  const vus = document.getElementById('vus').value;
+  const dur = document.getElementById('dur').value;
+  run('load-custom?vus=' + encodeURIComponent(vus) + '&dur=' + encodeURIComponent(dur),
+      'k6 custom (' + vus + ' VUs, ' + dur + ')');
+}
+</script>
+</body>
+</html>"""
+
+
+def build_page():
+    menu = []
+    for title, ids in SECTIONS:
+        menu.append(f"<h2>{title}</h2>")
+        for aid in ids:
+            lbl = ACTIONS[aid][0]
+            menu.append(
+                f"<button class=\"act\" onclick=\"run('{aid}', '{lbl}')\">{lbl}</button>"
+            )
+        if title.startswith("Carga"):
+            menu.append(
+                '<div class="k6form"><label>VUs</label><input id="vus" value="10">'
+                '<label>tempo</label><input id="dur" value="30s">'
+                '<button class="act" onclick="runK6()">k6 custom</button></div>'
+            )
+    links = " ".join(f'<a href="{url}" target="_blank">{name} ↗</a>' for name, url in LINKS)
+    return PAGE.replace("__MENU__", "\n".join(menu)).replace("__LINKS__", links)
+
+
+class Handler(BaseHTTPRequestHandler):
+    protocol_version = "HTTP/1.0"  # resposta delimitada pelo fechamento: streaming simples
+
+    def log_message(self, fmt, *args):
+        sys.stderr.write("  %s\n" % (fmt % args))
+
+    def do_GET(self):
+        if self.path in ("/", "/index.html"):
+            body = build_page().encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+        else:
+            self.send_error(404)
+
+    def do_POST(self):
+        from urllib.parse import urlparse, parse_qs
+        parsed = urlparse(self.path)
+        aid = parsed.path.removeprefix("/run/")
+        if aid == "load-custom":
+            qs = parse_qs(parsed.query)
+            vus = (qs.get("vus") or ["10"])[0]
+            dur = (qs.get("dur") or ["30s"])[0]
+            if not re.fullmatch(r"\d{1,4}", vus) or not re.fullmatch(r"\d{1,4}[smh]", dur):
+                self.send_error(400, "vus deve ser um numero e tempo algo como 30s, 2m")
+                return
+            cmd = f"bash scripts/load-test.sh custom {vus} {dur}"
+        elif aid in ACTIONS:
+            _, cmd = ACTIONS[aid]
+        else:
+            self.send_error(404)
+            return
+        self.send_response(200)
+        self.send_header("Content-Type", "text/plain; charset=utf-8")
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.end_headers()
+        self.wfile.write(f"$ {cmd}\n\n".encode("utf-8"))
+        self.wfile.flush()
+        proc = subprocess.Popen(
+            [BASH, "-c", cmd], cwd=ROOT, env=ENV,
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+        )
+        try:
+            for line in proc.stdout:
+                self.wfile.write(line.decode("utf-8", errors="replace").encode("utf-8"))
+                self.wfile.flush()
+        except (BrokenPipeError, ConnectionError):
+            proc.kill()
+        rc = proc.wait()
+        try:
+            self.wfile.write(f"\n[exit {rc}]\n".encode("utf-8"))
+        except (BrokenPipeError, ConnectionError):
+            pass
+
+
+if __name__ == "__main__":
+    server = ThreadingHTTPServer(("127.0.0.1", PORT), Handler)
+    print(f"Painel da Aula 07: http://localhost:{PORT}")
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        pass

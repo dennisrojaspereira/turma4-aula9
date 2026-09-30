@@ -1,0 +1,20 @@
+# Fault injection pelo mesh: toda chamada ao Fraud Service ganha +800ms.
+# O mesmo experimento do scripts/chaos.sh (lab 20), mas SEM tocar no codigo:
+# o sidecar do monolito atrasa a chamada antes de ela sair.
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: fraud-service
+  namespace: techpix-dev
+spec:
+  hosts:
+    - fraud-service
+  http:
+    - fault:
+        delay:
+          fixedDelay: 800ms
+          percentage:
+            value: 100
+      route:
+        - destination:
+            host: fraud-service

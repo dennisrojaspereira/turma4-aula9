@@ -1,0 +1,19 @@
+# Fault injection pelo mesh: 50% das chamadas ao Fraud Service respondem 500.
+# Compare com scripts/chaos.sh errors 0.5 — mesmo efeito, camadas diferentes.
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: fraud-service
+  namespace: techpix-dev
+spec:
+  hosts:
+    - fraud-service
+  http:
+    - fault:
+        abort:
+          httpStatus: 500
+          percentage:
+            value: 50
+      route:
+        - destination:
+            host: fraud-service

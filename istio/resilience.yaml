@@ -1,0 +1,19 @@
+# Timeout e retry pelo mesh: o que o lab 20 implementou a mao (RetryPolicy,
+# backoff, timeout no cliente HTTP), o Istio entrega por configuracao.
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: fraud-service
+  namespace: techpix-dev
+spec:
+  hosts:
+    - fraud-service
+  http:
+    - timeout: 2s
+      retries:
+        attempts: 2
+        perTryTimeout: 500ms
+        retryOn: 5xx,connect-failure
+      route:
+        - destination:
+            host: fraud-service
