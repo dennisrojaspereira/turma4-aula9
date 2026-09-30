@@ -37,7 +37,7 @@ KAFKA_TAIL = (
 ACTIONS = {
     # Status
     "pods":            ("Pods de dev", "kubectl -n techpix-dev get pods -o wide"),
-    "envs":            ("Os 3 ambientes (dev/qa/prod)", "for ns in techpix-dev techpix-qa techpix-prod; do echo \"== $ns\"; kubectl -n $ns get deploy; echo; done"),
+    "envs":            ("Os ambientes (dev/prod)", "for ns in techpix-dev techpix-prod; do echo \"== $ns\"; kubectl -n $ns get deploy; echo; done"),
     "targets":         ("Targets do Prometheus", "curl -s http://localhost:9090/api/v1/targets | python -c \"import json,sys; d=json.load(sys.stdin); [print(t['labels'].get('app'), t['scrapeUrl'], '->', t['health']) for t in d['data']['activeTargets']]\""),
     # Demo basica
     "demo":            ("Fazer um pagamento", "bash scripts/demo-payment.sh"),
@@ -78,8 +78,8 @@ ACTIONS = {
     # Istio
     "istio-sidecars":  ("Sidecars (2/2 = no mesh)", "kubectl -n techpix-dev get pods"),
     "istio-vs":        ("VirtualService ativo", "kubectl -n techpix-dev get virtualservice -o yaml 2>/dev/null | grep -E 'name:|fault:|fixedDelay|httpStatus|value:|timeout:|attempts:' || echo 'nenhum VirtualService ativo'"),
-    "istio-delay":     ("Mesh: +800ms no Fraud + pagamento", "kubectl apply -f istio/fault-delay.yaml && echo && echo '-> pagamento com o atraso injetado pelo sidecar:' && bash scripts/demo-payment.sh"),
-    "istio-abort":     ("Mesh: 50% de erros 500 + pagamento", "kubectl apply -f istio/fault-abort.yaml && echo && bash scripts/demo-payment.sh"),
+    "istio-delay":     ("Mesh: +800ms no Fraud + pagamento", "kubectl apply -f istio/fault-delay.yaml && echo '(modo NEW: o pagamento passa pelo Fraud Service remoto)' && bash scripts/fraud-mode.sh NEW >/dev/null && echo '-> compare fraudDurationMs com um pagamento normal (~40ms):' && bash scripts/demo-payment.sh"),
+    "istio-abort":     ("Mesh: 50% de erros 500 + pagamento", "kubectl apply -f istio/fault-abort.yaml && echo '(modo NEW: o pagamento passa pelo Fraud Service remoto)' && bash scripts/fraud-mode.sh NEW >/dev/null && echo '-> retry/fallback do lab 20 reagindo aos 500 do mesh:' && bash scripts/demo-payment.sh"),
     "istio-resilience":("Mesh: retry 2x + timeout 2s", "kubectl apply -f istio/resilience.yaml && kubectl -n techpix-dev get virtualservice"),
     "istio-off":       ("Desligar o mesh (remover VS)", "kubectl -n techpix-dev delete virtualservice fraud-service --ignore-not-found && echo 'VirtualService removido'"),
     # Historia
@@ -101,14 +101,15 @@ SECTIONS = [
 ]
 
 LINKS = [
+    ("Arquitetura", "/arquitetura"),
     ("Monólito dev", "http://localhost:8090/actuator/health"),
     ("Fraud dev", "http://localhost:8091/actuator/health/readiness"),
-    ("QA", "http://localhost:8092/actuator/health"),
     ("Prod", "http://localhost:8094/actuator/health"),
     ("Prometheus", "http://localhost:9090/targets"),
     ("Grafana", "http://localhost:3000/d/techpix"),
     ("Argo CD", "https://localhost:8443"),
     ("Gitea", "http://localhost:3001/techpix/tech-pix"),
+    ("Kiali (mesh)", "http://localhost:20001/kiali/console/graph/namespaces/?namespaces=techpix-dev"),
 ]
 
 PAGE = """<!DOCTYPE html>
@@ -146,6 +147,10 @@ PAGE = """<!DOCTYPE html>
   .links { padding: .6rem 2rem; border-bottom: 1px solid var(--border); display: flex; gap: 1.2rem; flex-wrap: wrap; }
   .links a { color: var(--accent); text-decoration: none; font-size: .88rem; }
   .links a:hover { text-decoration: underline; }
+  .creds { padding: .45rem 2rem; border-bottom: 1px solid var(--border); display: flex; gap: 1.4rem;
+           flex-wrap: wrap; font-size: .8rem; color: var(--muted); background: var(--surface); }
+  .creds b { color: var(--text); font-weight: 600; }
+  .creds code { font-family: Consolas, Menlo, monospace; color: var(--green); }
   .out-wrap { display: flex; flex-direction: column; min-width: 0; }
   .out-head { padding: .5rem 1.2rem; font-size: .85rem; color: var(--muted);
               border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; }
@@ -160,6 +165,7 @@ PAGE = """<!DOCTYPE html>
 <body>
 <header><h1>Tech Pix — Painel da Aula 07</h1><span>clique numa etapa; a saída aparece ao lado</span></header>
 <div class="links">__LINKS__</div>
+<div class="creds">__CREDS__</div>
 <div class="layout">
   <nav class="menu">__MENU__</nav>
   <div class="out-wrap">
@@ -209,6 +215,236 @@ function runK6() {
 </html>"""
 
 
+ARCH_PAGE = """<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Arquitetura — Aula 07</title>
+<style>
+  body { background: #0d1117; color: #e6edf3; font-family: "Segoe UI", system-ui, sans-serif;
+         margin: 0; padding: 1rem 16px; max-width: 1400px; margin-inline: auto; }
+  header { display: flex; align-items: baseline; gap: 1rem; margin-bottom: .4rem; flex-wrap: wrap; }
+  h1 { font-size: 1.2rem; }
+  h2 { font-size: 1.05rem; margin: 2.2rem 0 .3rem; padding-top: 1rem; border-top: 1px solid #30363d; }
+  p.desc { color: #8b949e; font-size: .9rem; margin: 0 0 .8rem; max-width: 900px; }
+  a { color: #2f81f7; text-decoration: none; font-size: .9rem; }
+  nav.idx { display: flex; gap: 1.1rem; flex-wrap: wrap; margin-bottom: .5rem; }
+  .mermaid { background: #0d1117; overflow-x: auto; }
+</style>
+</head>
+<body>
+<header><h1>Tech Pix — todos os sistemas</h1><a href="/">&larr; voltar ao painel</a></header>
+<nav class="idx">
+  <a href="#implantacao">Implantação</a>
+  <a href="#c4-1">C4 · 1 Contexto</a>
+  <a href="#c4-2">C4 · 2 Containers</a>
+  <a href="#c4-3">C4 · 3 Componentes</a>
+  <a href="#c4-4">C4 · 4 Código</a>
+</nav>
+<h2 id="implantacao">Visão de implantação — o que está rodando agora</h2>
+<p class="desc">Tudo que existe na máquina durante a aula: o cluster kind com os ambientes
+gerenciados pelo Argo CD, o mesh do Istio, e as ferramentas de apoio fora do cluster.</p>
+<pre class="mermaid">
+flowchart LR
+  subgraph HOST["Sua máquina"]
+    PAINEL["Painel :8099<br/>botões das etapas"]
+    K6["k6<br/>carga: baseline / growth / custom"]
+    PROM["Prometheus :9090<br/>(Compose)"]
+    GRAF["Grafana :3000<br/>dashboard techpix"]
+    GITEA["Gitea :3001<br/>git local"]
+  end
+
+  subgraph KIND["Cluster kind &quot;techpix&quot;"]
+    subgraph ARGONS["ns argocd"]
+      ARGO["Argo CD :8443<br/>sync + selfHeal + prune"]
+    end
+    subgraph ISTION["ns istio-system"]
+      ISTIOD["istiod<br/>injeta sidecars"]
+      KIALI["Kiali :20001<br/>grafo do mesh"]
+      PROMI["Prometheus in-cluster<br/>métricas do mesh"]
+    end
+    subgraph DEV["ns techpix-dev — :8090/:8091 (sidecars Envoy)"]
+      MONO["Monolith<br/>Account · Payment · Ledger<br/>Strangler: LEGACY/PARALLEL/CANARY/NEW"]
+      FRAUD["Fraud Service<br/>regras + visão local"]
+      PG[("Postgres<br/>techpix + fraud_db")]
+      KAF[("Kafka<br/>payment-events")]
+    end
+    QA["ns techpix-qa — :8092<br/>canary 10%"]
+    PROD["ns techpix-prod — :8094<br/>HPA no fraud"]
+  end
+
+  PAINEL -- "scripts (.sh)" --> MONO
+  K6 -- "POST /payments" --> MONO
+  MONO -- "HTTP via sidecar<br/>timeout + retry (lab 20)" --> FRAUD
+  MONO --> PG
+  FRAUD --> PG
+  MONO -- "fatos: PaymentApproved" --> KAF
+  KAF -- "consumer idempotente" --> FRAUD
+  ARGO -- "pull gitops/overlays" --> GITEA
+  ARGO -- "sync" --> DEV
+  ARGO -- "sync" --> QA
+  ARGO -- "sync" --> PROD
+  ISTIOD -. "sidecar + VirtualService<br/>fault injection / retry" .-> DEV
+  KIALI --> PROMI
+  PROMI -. "scrape mesh" .-> DEV
+  PROM -- "scrape :8090/:8091" --> MONO
+  GRAF --> PROM
+</pre>
+
+<h2 id="c4-1">C4 — Nível 1: Contexto</h2>
+<p class="desc">Quem usa a Tech Pix e com o que ela conversa. Um sistema de pagamentos Pix
+com análise de fraude; o instrutor opera o laboratório pelo painel.</p>
+<pre class="mermaid">
+C4Context
+  title Tech Pix — Diagrama de Contexto
+  Person(cliente, "Cliente", "Abre conta e faz pagamentos Pix")
+  Person(instrutor, "Instrutor", "Opera as demos pelo painel e pelos scripts")
+  System(techpix, "Tech Pix", "Processa pagamentos com análise de fraude, ledger e notificação")
+  System_Ext(extprov, "Provedor externo de risco", "Consultado pela regra external-provider (simulado no lab)")
+  System(gitops, "Plataforma GitOps", "Gitea + Argo CD: o Git descreve os ambientes, o cluster converge")
+  System(obs, "Observabilidade", "Prometheus, Grafana e Kiali: métricas, dashboards e o grafo do mesh")
+  Rel(cliente, techpix, "paga via", "HTTP/JSON")
+  Rel(instrutor, techpix, "opera", "painel :8099")
+  Rel(techpix, extprov, "consulta risco", "HTTP")
+  Rel(gitops, techpix, "implanta e reconcilia")
+  Rel(obs, techpix, "coleta métricas")
+</pre>
+
+<h2 id="c4-2">C4 — Nível 2: Containers</h2>
+<p class="desc">Dentro da Tech Pix: o monólito (que já foi tudo), o Fraud Service extraído,
+um banco por serviço e o Kafka carregando os fatos de pagamento. Cada processo em dev roda
+com um sidecar Envoy (Istio).</p>
+<pre class="mermaid">
+C4Container
+  title Tech Pix — Diagrama de Containers
+  Person(cliente, "Cliente")
+  System_Boundary(tp, "Tech Pix") {
+    Container(mono, "Monolith", "Spring Boot 3 / Java 21", "Account, Payment, Ledger, Notification e o Strangler de Fraud (LEGACY/PARALLEL/CANARY/NEW)")
+    Container(fraud, "Fraud Service", "Spring Boot 3 / Java 21", "Serviço extraído: 17 regras, RiskEngine, visão local própria")
+    ContainerDb(pg, "PostgreSQL", "techpix + fraud_db", "Database per Service: cada serviço com usuário e schema próprios")
+    ContainerQueue(kafka, "Kafka", "tópico payment-events", "Fatos publicados pelo Payment; consumidos com idempotência")
+  }
+  Rel(cliente, mono, "POST /payments", "HTTP :8090")
+  Rel(mono, fraud, "avalia risco", "HTTP :8081 via sidecar — timeout + retry com backoff")
+  Rel(mono, pg, "lê/escreve", "JDBC (techpix)")
+  Rel(fraud, pg, "visão local", "JDBC (fraud_db)")
+  Rel(mono, kafka, "publica PaymentApproved/Rejected")
+  Rel(kafka, fraud, "consumer idempotente atualiza a visão local")
+</pre>
+
+<h2 id="c4-3">C4 — Nível 3: Componentes</h2>
+<p class="desc">Dentro dos dois serviços: no monólito, o caminho do pagamento e o Strangler;
+no Fraud Service, o domínio isolado por portas e o ACL que traduz o modelo legado.</p>
+<pre class="mermaid">
+C4Component
+  title Monolith — componentes do caminho do pagamento
+  Container_Boundary(m, "Monolith") {
+    Component(api, "PaymentController", "REST", "Recebe POST /payments")
+    Component(psvc, "PaymentService", "Serviço", "Orquestra: fraude, débito, ledger, notificação; saga por compensação se a liquidação falha")
+    Component(facade, "Fraud Facade (Strangler)", "Branch by Abstraction", "Decide por modo: LEGACY, PARALLEL, CANARY, NEW")
+    Component(legacy, "Fraud legado", "in-process", "As regras originais dentro do monólito")
+    Component(canary, "CanaryRouter", "Roteador", "hash do pagador → N% vai ao serviço novo")
+    Component(client, "FraudRemoteClient", "HTTP", "timeout, RetryPolicy com backoff + jitter, fallback")
+    Component(ledger, "LedgerService", "Serviço", "Partida dobrada; ponto da compensação")
+    Component(pub, "PaymentEventPublisher", "Kafka", "Publica os fatos do pagamento")
+  }
+  Rel(api, psvc, "chama")
+  Rel(psvc, facade, "avalia fraude")
+  Rel(facade, legacy, "LEGACY / PARALLEL")
+  Rel(facade, canary, "CANARY")
+  Rel(canary, client, "N%")
+  Rel(facade, client, "NEW")
+  Rel(psvc, ledger, "lança")
+  Rel(psvc, pub, "publica fato")
+</pre>
+<pre class="mermaid">
+C4Component
+  title Fraud Service — componentes
+  Container_Boundary(f, "Fraud Service") {
+    Component(fapi, "FraudController", "REST", "POST /fraud/evaluate + admin/chaos")
+    Component(acl, "ACL", "Anticorruption Layer", "Traduz o modelo do monólito para o domínio novo")
+    Component(engine, "RiskEngine", "Domínio puro", "17 regras por trás de portas; sem dependência de framework")
+    Component(store, "Visão local", "fraud_db", "Os dados que Fraud precisa, mantidos por eventos")
+    Component(cons, "PaymentEventsConsumer", "Kafka", "Idempotente: processa cada evento uma vez")
+  }
+  Rel(fapi, acl, "traduz")
+  Rel(acl, engine, "avalia")
+  Rel(engine, store, "consulta")
+  Rel(cons, store, "atualiza")
+</pre>
+
+<h2 id="c4-4">C4 — Nível 4: Código</h2>
+<p class="desc">O nível de código só vale a pena onde a estrutura ensina algo. Aqui, os três
+mecanismos que a aula constrói à mão — e que o Istio depois entrega por configuração.</p>
+<pre class="mermaid">
+classDiagram
+  class FraudEvaluator {
+    &lt;&lt;interface&gt;&gt;
+    +evaluate(payment) Decision
+  }
+  class LegacyFraudAdapter { +evaluate(payment) }
+  class RemoteFraudAdapter { +evaluate(payment) }
+  class CanaryRouter {
+    -percentage int
+    +route(payerId) Target
+  }
+  class RetryPolicy {
+    -maxAttempts int
+    -baseBackoff Duration
+    +executeComRetry(call)
+    +jitter() Duration
+  }
+  class RiskEngine {
+    -rules List~FraudRule~
+    +assess(context) RiskScore
+  }
+  class FraudRule {
+    &lt;&lt;interface&gt;&gt;
+    +applies(context) bool
+    +score() int
+  }
+  FraudEvaluator <|.. LegacyFraudAdapter
+  FraudEvaluator <|.. RemoteFraudAdapter
+  RemoteFraudAdapter --> RetryPolicy : envolve chamadas
+  CanaryRouter --> FraudEvaluator : escolhe
+  RiskEngine o-- FraudRule : 17 regras
+</pre>
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "dark" });
+</script>
+</body>
+</html>"""
+
+
+def argocd_password():
+    try:
+        out = subprocess.run(
+            ["kubectl", "-n", "argocd", "get", "secret", "argocd-initial-admin-secret",
+             "-o", "jsonpath={.data.password}"],
+            capture_output=True, text=True, timeout=5,
+        ).stdout.strip()
+        if out:
+            import base64
+            return base64.b64decode(out).decode()
+    except Exception:
+        pass
+    return "(use o botão 'Senha do admin')"
+
+
+def build_creds():
+    items = [
+        ("Argo CD", f"admin / <code>{argocd_password()}</code>"),
+        ("Gitea", "techpix / <code>techpix123</code>"),
+        ("Postgres", "techpix / <code>techpix</code> · fraud / <code>fraud</code> "
+                     "(interno: kubectl -n techpix-dev port-forward svc/postgres 5432:5432)"),
+        ("Grafana", "sem login (anônimo, Admin)"),
+        ("Prometheus e apps", "sem senha"),
+    ]
+    return " ".join(f"<span><b>{name}:</b> {info}</span>" for name, info in items)
+
+
 def build_page():
     menu = []
     for title, ids in SECTIONS:
@@ -225,7 +461,9 @@ def build_page():
                 '<button class="act" onclick="runK6()">k6 custom</button></div>'
             )
     links = " ".join(f'<a href="{url}" target="_blank">{name} ↗</a>' for name, url in LINKS)
-    return PAGE.replace("__MENU__", "\n".join(menu)).replace("__LINKS__", links)
+    return (PAGE.replace("__MENU__", "\n".join(menu))
+                .replace("__LINKS__", links)
+                .replace("__CREDS__", build_creds()))
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -235,7 +473,14 @@ class Handler(BaseHTTPRequestHandler):
         sys.stderr.write("  %s\n" % (fmt % args))
 
     def do_GET(self):
-        if self.path in ("/", "/index.html"):
+        if self.path == "/arquitetura":
+            body = ARCH_PAGE.encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+        elif self.path in ("/", "/index.html"):
             body = build_page().encode("utf-8")
             self.send_response(200)
             self.send_header("Content-Type", "text/html; charset=utf-8")
