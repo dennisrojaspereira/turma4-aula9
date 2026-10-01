@@ -1,0 +1,34 @@
+# Task zap-baseline (DAST): roda o OWASP ZAP baseline scan contra a aplicacao RODANDO.
+# - -I: nao falha por WARN (headers faltando etc. sao material de discussao em aula);
+#   a task so falha se o ZAP reportar FAIL.
+# - Nao usa workspace: o zap-baseline.py escreve os relatorios em /zap/wrk,
+#   entao montamos um emptyDir la so para esta execucao.
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: zap-baseline
+  namespace: techpix-ci
+spec:
+  params:
+    - name: target-url
+      type: string
+      description: URL da aplicacao alvo, visivel de dentro do cluster
+  steps:
+    - name: scan
+      image: ghcr.io/zaproxy/zaproxy:stable
+      volumeMounts:
+        - name: wrk
+          mountPath: /zap/wrk
+      script: |
+        #!/bin/bash
+        set -u
+        # captura o exit code sem o set -e matar o step antes do cat do relatorio
+        rc=0
+        zap-baseline.py -t "$(params.target-url)" -w zap-report.md -I || rc=$?
+        echo
+        echo "===== relatorio ZAP ====="
+        cat /zap/wrk/zap-report.md || true
+        exit $rc
+  volumes:
+    - name: wrk
+      emptyDir: {}

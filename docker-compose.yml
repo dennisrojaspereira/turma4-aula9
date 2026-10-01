@@ -71,6 +71,15 @@ services:
       TECHPIX_FRAUD_MODE: ${TECHPIX_FRAUD_MODE:-LEGACY}
       # Dentro da rede do compose, o nome do servico e o endereco. Sem IP. (Service discovery do Docker, lab 10.)
       TECHPIX_FRAUD_SERVICE_URL: http://fraud-service:8081
+      # Lab 22: a seguranca liga com SPRING_PROFILES_ACTIVE=secure (exige o Keycloak do profile auth).
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-}
+      # Issuer mismatch: o navegador fala com o Keycloak em http://localhost:8180, mas este container
+      # fala em http://keycloak:8080 (o nome do servico so resolve dentro da rede do compose).
+      # Resolvemos separando as URLs: TECHPIX_KEYCLOAK_PUBLIC_URL e o que o NAVEGADOR usa (redirect do
+      # login) e TECHPIX_KEYCLOAK_ISSUER e o que o MONOLITO usa (token, JWKS, userinfo). O Spring valida
+      # o token pela assinatura (jwk-set-uri), nao pelo campo iss - ver application-secure.yml, item 4 do lab 22.
+      TECHPIX_KEYCLOAK_ISSUER: ${TECHPIX_KEYCLOAK_ISSUER:-http://keycloak:8080/realms/techpix}
+      TECHPIX_KEYCLOAK_PUBLIC_URL: ${TECHPIX_KEYCLOAK_PUBLIC_URL:-http://localhost:8180}
     ports:
       - "8080:8080"
     profiles: ["app"]
@@ -101,6 +110,36 @@ services:
     ports:
       - "8081:8081"
     profiles: ["app"]
+
+  keycloak:
+    # Lab 22: identidade centralizada (OIDC).
+    #   docker compose --profile auth up -d keycloak    -> admin console em http://localhost:8180 (admin/admin)
+    # O realm techpix (clients, roles, usuarios maria/joao) e importado de docker/keycloak/techpix-realm.json.
+    image: quay.io/keycloak/keycloak:26.0
+    container_name: techpix-keycloak
+    command: ["start-dev", "--import-realm"]
+    environment:
+      # Nomes novos do Keycloak 26:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      # Nomes antigos, mantidos por compatibilidade com versoes anteriores da imagem:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_HTTP_PORT: 8080
+      # Liga o endpoint de health na porta de management (9000), usado pelo healthcheck abaixo.
+      KC_HEALTH_ENABLED: "true"
+    ports:
+      - "8180:8080"
+    volumes:
+      - ./docker/keycloak:/opt/keycloak/data/import:ro
+    healthcheck:
+      # A imagem do Keycloak 26 nao tem curl; testamos a porta de management com /dev/tcp do bash.
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/9000 && echo ok"]
+      interval: 5s
+      timeout: 3s
+      retries: 36
+    # Profile proprio para nao pesar o --profile app dos labs antigos.
+    profiles: ["auth"]
 
   prometheus:
     image: prom/prometheus:v2.55.1

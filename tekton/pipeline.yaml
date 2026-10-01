@@ -1,0 +1,53 @@
+# Pipeline de seguranca: clone -> SAST (codigo) -> DAST (aplicacao rodando).
+# 1. fetch: clona o repositorio do Gitea local (o cluster enxerga via host.docker.internal)
+# 2. sast:  SonarQube analisa o CODIGO; o quality gate reprova = pipeline falha
+# 3. dast:  OWASP ZAP ataca a APLICACAO em execucao no cluster (baseline scan)
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: security-pipeline
+  namespace: techpix-ci
+spec:
+  params:
+    - name: repo-url
+      type: string
+      default: http://host.docker.internal:3001/techpix/tech-pix.git
+    - name: revision
+      type: string
+      default: main
+    - name: target-url
+      type: string
+      default: http://monolith.techpix.svc.cluster.local:8080
+  workspaces:
+    - name: source
+    - name: maven-cache
+  tasks:
+    - name: fetch
+      taskRef:
+        name: git-clone
+      params:
+        - name: url
+          value: $(params.repo-url)
+        - name: revision
+          value: $(params.revision)
+      workspaces:
+        - name: source
+          workspace: source
+    - name: sast
+      taskRef:
+        name: maven-sonar
+      runAfter:
+        - fetch
+      workspaces:
+        - name: source
+          workspace: source
+        - name: maven-cache
+          workspace: maven-cache
+    - name: dast
+      taskRef:
+        name: zap-baseline
+      runAfter:
+        - sast
+      params:
+        - name: target-url
+          value: $(params.target-url)

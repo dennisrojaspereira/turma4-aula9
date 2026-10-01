@@ -1,0 +1,20 @@
+# Namespace da pipeline de seguranca (Tekton) e cache de dependencias Maven.
+# O PVC maven-cache e compartilhado entre execucoes: sem ele, cada run da pipeline
+# baixaria TODAS as dependencias Maven de novo (varios minutos e centenas de MB).
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: techpix-ci
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: maven-cache
+  namespace: techpix-ci
+spec:
+  # storage class default do kind (local-path provisioner)
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi

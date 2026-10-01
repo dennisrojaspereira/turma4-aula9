@@ -91,6 +91,30 @@ TECHPIX_GIT_URL=http://host.docker.internal:3001/techpix/tech-pix.git scripts/ar
 scripts/argocd-drift-demo.sh
 ```
 
+### Aula 8 — Segurança (pipeline SAST/DAST e autenticação)
+
+Pipeline de segurança com Tekton no cluster kind: clone (Gitea local) → SAST (SonarQube com quality gate) → DAST (OWASP ZAP contra a aplicação rodando):
+
+```bash
+scripts/k8s-up.sh                            # alvo do DAST
+scripts/local-git-server.sh                  # codigo no Gitea para o clone
+scripts/tekton-up.sh                         # Tekton + SonarQube (localhost:9000) + manifests tekton/
+scripts/pipeline-run.sh                      # dispara e acompanha; SAST em http://localhost:9000
+```
+
+Autenticação com Keycloak (realm, clients e usuários pré-provisionados) e tela de login:
+
+```bash
+scripts/keycloak-up.sh                       # Keycloak em :8180 (admin/admin), realm techpix importado
+docker compose up -d postgres
+SPRING_PROFILES_ACTIVE=secure ./mvnw -pl monolith spring-boot:run
+# http://localhost:8080/login -> maria/techpix123 (admin) ou joao/techpix123 (user)
+```
+
+Sem o profile `secure`, nada muda: os labs anteriores e os testes continuam funcionando sem Keycloak.
+
+Todos os acessos (UIs, portas, credenciais, comandos) em um lugar: abra [hub.html](hub.html) no navegador.
+
 No Windows, cada script em `scripts/` tem um equivalente `.ps1`; os scripts `.sh` também rodam no Git Bash.
 
 ## Labs
@@ -119,6 +143,8 @@ Cada lab segue a mesma estrutura: problema, o que observar, hipóteses, mudança
 | [18 — Shared Database e Database per Service](docs/labs/18-database-per-service.md) | 23, 24 | `aula07-step-12-database-per-service` |
 | [19 — Kafka: o JOIN virou evento](docs/labs/19-kafka.md) | 25 | `aula07-step-13-kafka` |
 | [20 — Complexidade dos sistemas distribuídos](docs/labs/20-distributed-systems.md) | 26 | `aula07-step-14-distributed-problems` |
+| [21 — Pipeline de segurança: Tekton, SAST e DAST](docs/labs/21-secure-pipeline.md) | Aula 8 | — |
+| [22 — Autenticação com Keycloak e tela de login](docs/labs/22-keycloak-login.md) | Aula 8 | — |
 
 O [mapa dos 26 slides](docs/architecture/slides-map.md) diz o que demonstrar ao vivo em cada um e propõe um roteiro de 2 horas. A [evolução dos diagramas](docs/architecture/evolution.md) mostra a arquitetura mudando, lab a lab.
 

@@ -102,6 +102,9 @@ class StranglerIT extends AbstractIntegrationTest {
         long elapsed = System.currentTimeMillis() - start;
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE);
-        assertThat(elapsed).isLessThan(1_800);
+        // O que esta em teste: o timeout corta cada tentativa, nao esperamos o delay de 2s do fake.
+        // Pior caso legitimo: 3 tentativas x 500ms + backoff 100ms + 200ms (jitter +20%) ~= 1,9s --
+        // bem abaixo dos ~6s de esperar o fake responder em cada tentativa.
+        assertThat(elapsed).isLessThan(2_500);
     }
 }

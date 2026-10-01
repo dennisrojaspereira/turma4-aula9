@@ -1,0 +1,45 @@
+# Task maven-sonar (SAST): compila o codigo e roda a analise estatica no SonarQube.
+# - Os testes sao PULADOS (-DskipTests) porque usam Testcontainers, que exige um
+#   Docker daemon -- e nao existe Docker dentro do Pod da task.
+# - -Dsonar.qualitygate.wait=true: a task espera o resultado do quality gate e FALHA
+#   se ele reprovar. Esse e o ponto pedagogico: a pipeline e um gate, nao um relatorio.
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: maven-sonar
+  namespace: techpix-ci
+spec:
+  workspaces:
+    - name: source
+      description: codigo clonado pela task git-clone
+    - name: maven-cache
+      description: repositorio Maven local persistente (evita baixar tudo a cada run)
+  steps:
+    - name: build-and-scan
+      image: maven:3.9.9-eclipse-temurin-21
+      workingDir: $(workspaces.source.path)
+      env:
+        # host e token vem do Secret "sonarqube", criado por scripts/tekton-up.sh
+        - name: SONAR_HOST_URL
+          valueFrom:
+            secretKeyRef:
+              name: sonarqube
+              key: host
+        - name: SONAR_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: sonarqube
+              key: token
+      script: |
+        #!/bin/sh
+        set -eu
+        mvn -B -ntp \
+          -Dmaven.repo.local=$(workspaces.maven-cache.path) \
+          -DskipTests \
+          package \
+          org.sonarsource.scanner.maven:sonar-maven-plugin:5.1.0.4751:sonar \
+          -Dsonar.projectKey=tech-pix \
+          -Dsonar.projectName="Tech Pix" \
+          -Dsonar.host.url=$SONAR_HOST_URL \
+          -Dsonar.token=$SONAR_TOKEN \
+          -Dsonar.qualitygate.wait=true

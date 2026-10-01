@@ -82,6 +82,12 @@ ACTIONS = {
     "istio-abort":     ("Mesh: 50% de erros 500 + pagamento", "kubectl apply -f istio/fault-abort.yaml && echo '(modo NEW: o pagamento passa pelo Fraud Service remoto)' && bash scripts/fraud-mode.sh NEW >/dev/null && echo '-> retry/fallback do lab 20 reagindo aos 500 do mesh:' && bash scripts/demo-payment.sh"),
     "istio-resilience":("Mesh: retry 2x + timeout 2s", "kubectl apply -f istio/resilience.yaml && kubectl -n techpix-dev get virtualservice"),
     "istio-off":       ("Desligar o mesh (remover VS)", "kubectl -n techpix-dev delete virtualservice fraud-service --ignore-not-found && echo 'VirtualService removido'"),
+    # Seguranca (Aula 8, labs 21/22)
+    "sec-tekton-up":   ("Instalar pipeline (Tekton + SonarQube)", "bash scripts/tekton-up.sh"),
+    "sec-pipeline":    ("Rodar pipeline: SAST + DAST", "bash scripts/pipeline-run.sh"),
+    "sec-runs":        ("Execucoes da pipeline", "kubectl -n techpix-ci get pipelineruns"),
+    "sec-dashboard":   ("Reabrir Tekton Dashboard (port-forward 9097)", "(kubectl -n tekton-pipelines port-forward svc/tekton-dashboard 9097:9097 >/dev/null 2>&1 &) && echo 'UI: http://localhost:9097' && sleep 1"),
+    "sec-keycloak":    ("Subir Keycloak (realm techpix)", "bash scripts/keycloak-up.sh"),
     # Historia
     "steps":           ("Listar as 14 etapas (tags)", "git tag -l 'aula07-*'"),
 }
@@ -97,6 +103,7 @@ SECTIONS = [
     ("Caos — lab 20 (em código)", ["chaos-latency", "chaos-errors", "chaos-off", "chaos-status"]),
     ("Istio — lab 20 pelo mesh", ["istio-sidecars", "istio-delay", "istio-abort", "istio-resilience", "istio-vs", "istio-off"]),
     ("GitOps / Argo CD", ["argocd-apps", "drift", "argocd-forward", "argocd-pass", "gitea-push"]),
+    ("Segurança — labs 21/22 (Aula 8)", ["sec-tekton-up", "sec-pipeline", "sec-runs", "sec-dashboard", "sec-keycloak"]),
     ("História", ["steps"]),
 ]
 
@@ -110,6 +117,9 @@ LINKS = [
     ("Argo CD", "https://localhost:8443"),
     ("Gitea", "http://localhost:3001/techpix/tech-pix"),
     ("Kiali (mesh)", "http://localhost:20001/kiali/console/graph/namespaces/?namespaces=techpix-dev"),
+    ("Tekton Dashboard", "http://localhost:9097/#/namespaces/techpix-ci/pipelineruns"),
+    ("SonarQube", "http://localhost:9000/dashboard?id=tech-pix"),
+    ("Keycloak", "http://localhost:8180"),
 ]
 
 PAGE = """<!DOCTYPE html>
@@ -441,6 +451,8 @@ def build_creds():
                      "(interno: kubectl -n techpix-dev port-forward svc/postgres 5432:5432)"),
         ("Grafana", "sem login (anônimo, Admin)"),
         ("Prometheus e apps", "sem senha"),
+        ("SonarQube", "admin / <code>admin</code>"),
+        ("Keycloak", "admin / <code>admin</code> · app: maria ou joao / <code>techpix123</code>"),
     ]
     return " ".join(f"<span><b>{name}:</b> {info}</span>" for name, info in items)
 

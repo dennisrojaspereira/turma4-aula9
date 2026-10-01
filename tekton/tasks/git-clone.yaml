@@ -1,0 +1,30 @@
+# Task git-clone: clona o repositorio no workspace "source".
+# Clone raso (--depth 1): a pipeline so precisa do estado atual do codigo, nao do historico.
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: git-clone
+  namespace: techpix-ci
+spec:
+  params:
+    - name: url
+      type: string
+      description: URL do repositorio Git (visivel de dentro do cluster)
+    - name: revision
+      type: string
+      description: branch ou tag a clonar
+      default: main
+  workspaces:
+    - name: source
+      description: onde o codigo clonado fica para as tasks seguintes
+  steps:
+    - name: clone
+      image: alpine/git:2.47.2
+      workingDir: $(workspaces.source.path)
+      script: |
+        #!/bin/sh
+        set -eu
+        # limpa o workspace: o PVC pode conter restos de uma execucao anterior
+        rm -rf ./* ./.git
+        git clone --depth 1 --branch "$(params.revision)" "$(params.url)" .
+        git log -1 --oneline

@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tech Pix — Hub</title>
+<!-- Abra este arquivo direto no navegador (duplo clique). Ele so contem links para
+     localhost e um "ping" opcional nos health endpoints para mostrar o que esta no ar. -->
+<style>
+  :root {
+    --bg: #0d1117; --surface: #161b22; --border: #30363d;
+    --text: #e6edf3; --muted: #8b949e; --accent: #2f81f7;
+    --green: #3fb950; --red: #f85149; --gray: #6e7681;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: "Segoe UI", system-ui, sans-serif;
+         padding: 1.4rem 16px 3rem; max-width: 1180px; margin-inline: auto; }
+  header { display: flex; align-items: baseline; gap: 1rem; flex-wrap: wrap; margin-bottom: .3rem; }
+  h1 { font-size: 1.35rem; }
+  header span { color: var(--muted); font-size: .9rem; }
+  h2 { font-size: .8rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted);
+       margin: 1.8rem 0 .6rem; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(255px, 1fr)); gap: .7rem; }
+  a.card { display: block; background: var(--surface); border: 1px solid var(--border);
+           border-radius: 8px; padding: .75rem .9rem; text-decoration: none; color: var(--text); }
+  a.card:hover { border-color: var(--accent); }
+  .card .top { display: flex; align-items: center; gap: .5rem; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--gray); flex: none; }
+  .dot.up { background: var(--green); }
+  .dot.down { background: var(--red); }
+  .card b { font-size: .95rem; font-weight: 600; }
+  .card .url { color: var(--accent); font-size: .78rem; margin-top: .25rem;
+               font-family: Consolas, Menlo, monospace; word-break: break-all; }
+  .card .desc { color: var(--muted); font-size: .8rem; margin-top: .3rem; line-height: 1.35; }
+  .card .cred { margin-top: .35rem; font-size: .78rem; color: var(--muted); }
+  .card .cred code { color: var(--green); font-family: Consolas, Menlo, monospace; }
+  .how { background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+         padding: .9rem 1rem; margin-top: .7rem; }
+  .how table { border-collapse: collapse; width: 100%; font-size: .83rem; }
+  .how td { padding: .3rem .6rem .3rem 0; vertical-align: top; }
+  .how td:first-child { color: var(--muted); white-space: nowrap; }
+  .how code { color: var(--green); font-family: Consolas, Menlo, monospace; font-size: .8rem; }
+  .note { color: var(--muted); font-size: .8rem; margin-top: .6rem; }
+  .note code { color: var(--green); font-family: Consolas, Menlo, monospace; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Tech Pix — Hub de acesso</h1>
+  <span>tudo que roda no laboratório, em um lugar · <span class="dot up" style="display:inline-block"></span> no ar · <span class="dot down" style="display:inline-block"></span> fora · <span class="dot" style="display:inline-block"></span> não verificado</span>
+</header>
+
+<h2>Painel e aplicação</h2>
+<div class="grid">
+  <a class="card" href="http://localhost:8099" target="_blank" data-check="http://localhost:8099/">
+    <div class="top"><span class="dot"></span><b>Painel da aula</b></div>
+    <div class="url">localhost:8099</div>
+    <div class="desc">Botões de todas as demos. Sobe com <code>python scripts/painel.py</code>.</div>
+  </a>
+  <a class="card" href="http://localhost:8090/actuator/health" target="_blank" data-check="http://localhost:8090/actuator/health">
+    <div class="top"><span class="dot"></span><b>Monólito (dev, kind)</b></div>
+    <div class="url">localhost:8090</div>
+    <div class="desc">A aplicação no cluster. QA em :8092, prod em :8094.</div>
+  </a>
+  <a class="card" href="http://localhost:8091/actuator/health/readiness" target="_blank" data-check="http://localhost:8091/actuator/health/readiness">
+    <div class="top"><span class="dot"></span><b>Fraud Service (dev, kind)</b></div>
+    <div class="url">localhost:8091</div>
+    <div class="desc">O serviço extraído. QA em :8093, prod em :8095.</div>
+  </a>
+  <a class="card" href="http://localhost:8080/login" target="_blank" data-check="http://localhost:8080/actuator/health">
+    <div class="top"><span class="dot"></span><b>Tela de login (lab 22)</b></div>
+    <div class="url">localhost:8080/login</div>
+    <div class="desc">Monólito rodando pelo Maven com <code>SPRING_PROFILES_ACTIVE=secure</code>.</div>
+    <div class="cred">maria ou joao / <code>techpix123</code></div>
+  </a>
+</div>
+
+<h2>Segurança — Aula 8 (labs 21 e 22)</h2>
+<div class="grid">
+  <a class="card" href="http://localhost:9097/#/namespaces/techpix-ci/pipelineruns" target="_blank" data-check="http://localhost:9097/">
+    <div class="top"><span class="dot"></span><b>Tekton Dashboard</b></div>
+    <div class="url">localhost:9097</div>
+    <div class="desc">A pipeline rodando ao vivo: fetch → sast → dast, com logs por task. Precisa do port-forward (botão no painel).</div>
+  </a>
+  <a class="card" href="http://localhost:9000/dashboard?id=tech-pix" target="_blank" data-check="http://localhost:9000/api/system/status">
+    <div class="top"><span class="dot"></span><b>SonarQube (SAST)</b></div>
+    <div class="url">localhost:9000</div>
+    <div class="desc">Resultado da análise estática e o quality gate do projeto tech-pix.</div>
+    <div class="cred">admin / <code>admin</code></div>
+  </a>
+  <a class="card" href="http://localhost:8180" target="_blank" data-check="http://localhost:8180/realms/techpix/.well-known/openid-configuration">
+    <div class="top"><span class="dot"></span><b>Keycloak</b></div>
+    <div class="url">localhost:8180</div>
+    <div class="desc">Realm techpix: clients, roles e usuários da aplicação.</div>
+    <div class="cred">admin / <code>admin</code></div>
+  </a>
+</div>
+<p class="note">O relatório do <b>ZAP (DAST)</b> não tem UI própria: sai nos logs da task <code>dast</code> — no Tekton Dashboard ou no botão "Rodar pipeline" do painel.</p>
+
+<h2>GitOps</h2>
+<div class="grid">
+  <a class="card" href="https://localhost:8443" target="_blank">
+    <div class="top"><span class="dot"></span><b>Argo CD</b></div>
+    <div class="url">localhost:8443 (https)</div>
+    <div class="desc">Applications dev/qa/prod, drift e reconciliação. Precisa do port-forward (botão no painel); aceite o certificado autoassinado.</div>
+    <div class="cred">admin / senha: botão "Senha do admin" no painel</div>
+  </a>
+  <a class="card" href="http://localhost:3001/techpix/tech-pix" target="_blank" data-check="http://localhost:3001/api/healthz">
+    <div class="top"><span class="dot"></span><b>Gitea (git local)</b></div>
+    <div class="url">localhost:3001</div>
+    <div class="desc">O repositório que o Argo CD e a pipeline Tekton clonam.</div>
+    <div class="cred">techpix / <code>techpix123</code></div>
+  </a>
+</div>
+
+<h2>Observabilidade</h2>
+<div class="grid">
+  <a class="card" href="http://localhost:9090/targets" target="_blank" data-check="http://localhost:9090/-/ready">
+    <div class="top"><span class="dot"></span><b>Prometheus</b></div>
+    <div class="url">localhost:9090</div>
+    <div class="desc">Targets e métricas cruas.</div>
+  </a>
+  <a class="card" href="http://localhost:3000/d/techpix" target="_blank" data-check="http://localhost:3000/api/health">
+    <div class="top"><span class="dot"></span><b>Grafana</b></div>
+    <div class="url">localhost:3000</div>
+    <div class="desc">Dashboard techpix. Sem login (anônimo, Admin).</div>
+  </a>
+  <a class="card" href="http://localhost:20001/kiali/console/graph/namespaces/?namespaces=techpix-dev" target="_blank" data-check="http://localhost:20001/kiali/">
+    <div class="top"><span class="dot"></span><b>Kiali (mesh)</b></div>
+    <div class="url">localhost:20001</div>
+    <div class="desc">O grafo do Istio em techpix-dev. Precisa do port-forward do Kiali.</div>
+  </a>
+</div>
+
+<h2>Como subir cada coisa</h2>
+<div class="how">
+  <table>
+    <tr><td>Cluster + aplicação</td><td><code>scripts/k8s-up.sh</code></td></tr>
+    <tr><td>Git local (Gitea)</td><td><code>scripts/local-git-server.sh</code></td></tr>
+    <tr><td>Pipeline (Tekton + SonarQube + Dashboard)</td><td><code>scripts/tekton-up.sh</code> &nbsp;·&nbsp; rodar: <code>scripts/pipeline-run.sh</code></td></tr>
+    <tr><td>Keycloak (realm techpix)</td><td><code>scripts/keycloak-up.sh</code></td></tr>
+    <tr><td>App com login</td><td><code>SPRING_PROFILES_ACTIVE=secure ./mvnw -pl monolith spring-boot:run</code></td></tr>
+    <tr><td>Argo CD</td><td><code>TECHPIX_GIT_URL=http://host.docker.internal:3001/techpix/tech-pix.git scripts/argocd-up.sh</code></td></tr>
+    <tr><td>Prometheus + Grafana</td><td><code>docker compose --profile observability up -d</code></td></tr>
+    <tr><td>Painel</td><td><code>python scripts/painel.py</code></td></tr>
+  </table>
+</div>
+<p class="note">Os port-forwards (Tekton Dashboard, Argo CD, Kiali) caem quando o terminal fecha —
+reabra pelos botões do painel. O indicador de status usa <code>fetch</code> dos health endpoints;
+se o navegador bloquear a checagem a partir de <code>file://</code>, a bolinha fica cinza, mas os
+links continuam funcionando.</p>
+
+<script>
+  // Ping leve: no-cors resolve (resposta opaca) se o servidor respondeu, rejeita se nao ha nada
+  // ouvindo. O Argo CD (https autoassinado) nao e verificavel assim e fica sem data-check.
+  document.querySelectorAll('a.card[data-check]').forEach(async card => {
+    const dot = card.querySelector('.dot');
+    const ctl = new AbortController();
+    const timer = setTimeout(() => ctl.abort(), 2500);
+    try {
+      await fetch(card.dataset.check, { mode: 'no-cors', cache: 'no-store', signal: ctl.signal });
+      dot.classList.add('up');
+    } catch (e) {
+      dot.classList.add('down');
+    } finally {
+      clearTimeout(timer);
+    }
+  });
+</script>
+</body>
+</html>

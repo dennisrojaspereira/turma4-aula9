@@ -18,7 +18,9 @@ import org.springframework.http.ResponseEntity;
  */
 class PaymentEventsConsumerIT extends AbstractFraudEventsIT {
 
-    static final Instant NOW = Instant.now();
+    // Instante fixo DIURNO (UTC), como no FraudEvaluationIT: com Instant.now(), a suite rodada
+    // entre 00h e 05h UTC ganharia +15 da regra night-time e o score esperado nao bateria.
+    static final Instant NOW = Instant.parse("2026-03-01T15:00:00Z");
 
     @Test
     void approvedFactLandsInTheLocalView() {

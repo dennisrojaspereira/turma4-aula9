@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tech Pix</title>
+  <style>
+    :root {
+      --ink: #0f172a;
+      --muted: #64748b;
+      --accent: #0ea5a4;
+      --accent-dark: #0b807f;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #0f172a 0%, #134e4a 100%);
+      padding: 16px;
+    }
+    .card {
+      background: #ffffff;
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+      padding: 40px;
+      width: 100%;
+      max-width: 460px;
+    }
+    .brand { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+    .logo {
+      width: 44px; height: 44px;
+      border-radius: 11px;
+      background: linear-gradient(135deg, var(--accent), #14b8a6);
+      color: #fff; font-size: 22px; font-weight: 800;
+      display: flex; align-items: center; justify-content: center;
+    }
+    h1 { color: var(--ink); font-size: 22px; letter-spacing: -0.02em; }
+    .brand small { color: var(--muted); display: block; font-size: 12px; }
+    #who { font-size: 15px; color: var(--ink); margin: 10px 0 16px; }
+    .roles { margin: 8px 0 16px; }
+    .role {
+      display: inline-block;
+      background: #ecfdf5; color: #047857;
+      border: 1px solid #a7f3d0;
+      border-radius: 999px;
+      padding: 2px 10px;
+      font-size: 12px; font-weight: 600;
+      margin-right: 6px;
+    }
+    .btn {
+      display: inline-block;
+      padding: 10px 18px;
+      border-radius: 9px;
+      background: var(--accent);
+      color: #fff;
+      font-size: 14px; font-weight: 600;
+      text-decoration: none;
+      border: none; cursor: pointer;
+    }
+    .btn:hover { background: var(--accent-dark); }
+    .btn.ghost { background: #f1f5f9; color: var(--ink); }
+    .links { margin-top: 26px; border-top: 1px solid #e2e8f0; padding-top: 16px; }
+    .links p { font-size: 12px; color: var(--muted); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.06em; }
+    .links a { display: block; color: var(--accent-dark); font-size: 14px; text-decoration: none; padding: 3px 0; }
+    .links a:hover { text-decoration: underline; }
+    code { background: #f1f5f9; padding: 1px 5px; border-radius: 4px; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <div class="brand">
+      <div class="logo">T</div>
+      <div>
+        <h1>Tech Pix</h1>
+        <small>monólito — Aula 8: Segurança Aplicada e Governança</small>
+      </div>
+    </div>
+    <p id="who">Carregando…</p>
+    <div id="actions"></div>
+    <div class="links">
+      <p>Links úteis</p>
+      <a href="/me">/me — quem sou eu (JSON)</a>
+      <a href="/actuator/health">/actuator/health</a>
+      <a href="/actuator/prometheus">/actuator/prometheus</a>
+    </div>
+  </main>
+  <script>
+    // /me e publico nos dois modos: anonimo responde {authenticated:false}.
+    // O logout e um GET simples (ver SecurityConfig): sem token CSRF no JS.
+    function esc(s) {
+      return String(s).replace(/[&<>"']/g, function (c) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+      });
+    }
+    fetch('/me')
+      .then(function (r) { return r.json(); })
+      .then(function (me) {
+        var who = document.getElementById('who');
+        var actions = document.getElementById('actions');
+        if (me.authenticated) {
+          who.innerHTML = 'Olá, <strong>' + esc(me.name) + '</strong>' +
+            (me.email ? ' <span style="color:#64748b">(' + esc(me.email) + ')</span>' : '');
+          var roles = (me.roles || []).map(function (r) {
+            return '<span class="role">' + esc(r) + '</span>';
+          }).join('');
+          who.insertAdjacentHTML('afterend', '<div class="roles">' + roles + '</div>');
+          actions.innerHTML = '<a class="btn ghost" href="/logout">Sair</a>';
+        } else {
+          who.textContent = 'Você não está autenticado.';
+          actions.innerHTML = '<a class="btn" href="/login">Entrar</a>';
+        }
+      })
+      .catch(function () {
+        document.getElementById('who').textContent = 'Não foi possível consultar /me.';
+      });
+  </script>
+</body>
+</html>

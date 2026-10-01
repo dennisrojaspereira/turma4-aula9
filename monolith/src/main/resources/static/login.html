@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tech Pix — Login</title>
+  <style>
+    :root {
+      --ink: #0f172a;
+      --muted: #64748b;
+      --accent: #0ea5a4;
+      --accent-dark: #0b807f;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #0f172a 0%, #134e4a 100%);
+      padding: 16px;
+    }
+    .card {
+      background: #ffffff;
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+      padding: 44px 40px 32px;
+      width: 100%;
+      max-width: 400px;
+      text-align: center;
+    }
+    .logo {
+      width: 56px; height: 56px;
+      margin: 0 auto 16px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, var(--accent), #14b8a6);
+      color: #fff;
+      font-size: 28px; font-weight: 800;
+      display: flex; align-items: center; justify-content: center;
+    }
+    h1 { color: var(--ink); font-size: 26px; letter-spacing: -0.02em; }
+    .subtitle { color: var(--muted); font-size: 14px; margin: 6px 0 28px; }
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 13px 16px;
+      border-radius: 10px;
+      background: var(--accent);
+      color: #fff;
+      font-size: 15px; font-weight: 600;
+      text-decoration: none;
+      transition: background 0.15s ease;
+    }
+    .btn:hover { background: var(--accent-dark); }
+    .demo {
+      margin-top: 26px;
+      padding: 14px 16px;
+      border: 1px dashed #cbd5e1;
+      border-radius: 10px;
+      text-align: left;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .demo strong { color: var(--ink); }
+    .demo code {
+      background: #f1f5f9;
+      padding: 1px 5px;
+      border-radius: 4px;
+      font-size: 12px;
+      color: var(--ink);
+    }
+    .demo p + p { margin-top: 6px; }
+    .foot { margin-top: 20px; font-size: 12px; color: #94a3b8; }
+    .foot a { color: var(--accent-dark); text-decoration: none; }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <div class="logo">T</div>
+    <h1>Tech Pix</h1>
+    <p class="subtitle">Pagamentos instantâneos — ambiente de laboratório</p>
+    <a class="btn" href="/oauth2/authorization/keycloak">Entrar com Keycloak</a>
+    <div class="demo">
+      <p><strong>Usuários de demonstração</strong></p>
+      <p><code>maria</code> / <code>techpix123</code> — admin (techpix-admin)</p>
+      <p><code>joao</code> / <code>techpix123</code> — user (techpix-user)</p>
+    </div>
+    <p class="foot">Keycloak em <a href="http://localhost:8180">localhost:8180</a> · realm <code>techpix</code></p>
+  </main>
+</body>
+</html>

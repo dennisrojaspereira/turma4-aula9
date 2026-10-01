@@ -1,0 +1,41 @@
+# Lab 22: autenticacao com Keycloak. Este arquivo so carrega com SPRING_PROFILES_ACTIVE=secure.
+# Sem o profile, a aplicacao sobe exatamente como antes (sem Keycloak, tudo permitAll).
+#
+# DECISAO (issuer mismatch): o navegador fala com o Keycloak em http://localhost:8180, mas quando o
+# monolito roda em container ele fala em http://keycloak:8080. Um issuer-uri unico nao serve para os
+# dois mundos. Escolhemos ENDPOINTS EXPLICITOS em vez de discovery por issuer-uri:
+#   - authorization-uri usa a URL PUBLICA (quem navega ate ela e o navegador);
+#   - token-uri / jwk-set-uri / user-info-uri usam a URL que o MONOLITO alcanca;
+#   - o resource server valida o Bearer token pela ASSINATURA (jwk-set-uri), nao pelo campo iss.
+# Trade-off: perdemos a validacao do issuer (iss) do token. Aceitavel em laboratorio - a chave publica
+# vem direto do Keycloak que nos mesmos subimos. Em producao, com uma unica URL publica para o IdP,
+# volte para issuer-uri e ganhe a validacao de iss de graca.
+#
+# Rodando tudo na maquina (caso principal da aula: ./mvnw -pl monolith spring-boot:run), os defaults
+# abaixo ja funcionam: publico e interno sao o mesmo http://localhost:8180.
+spring:
+  security:
+    oauth2:
+      client:
+        registration:
+          keycloak:
+            client-id: techpix-monolith
+            client-secret: ${TECHPIX_KEYCLOAK_CLIENT_SECRET:techpix-monolith-secret}
+            authorization-grant-type: authorization_code
+            scope: openid,profile,email
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+        provider:
+          keycloak:
+            authorization-uri: ${TECHPIX_KEYCLOAK_PUBLIC_URL:http://localhost:8180}/realms/techpix/protocol/openid-connect/auth
+            token-uri: ${TECHPIX_KEYCLOAK_ISSUER:http://localhost:8180/realms/techpix}/protocol/openid-connect/token
+            jwk-set-uri: ${TECHPIX_KEYCLOAK_ISSUER:http://localhost:8180/realms/techpix}/protocol/openid-connect/certs
+            user-info-uri: ${TECHPIX_KEYCLOAK_ISSUER:http://localhost:8180/realms/techpix}/protocol/openid-connect/userinfo
+            user-name-attribute: preferred_username
+      resourceserver:
+        jwt:
+          jwk-set-uri: ${TECHPIX_KEYCLOAK_ISSUER:http://localhost:8180/realms/techpix}/protocol/openid-connect/certs
+
+techpix:
+  keycloak:
+    # URL que o NAVEGADOR alcanca; usada no redirect de logout (end_session_endpoint).
+    public-url: ${TECHPIX_KEYCLOAK_PUBLIC_URL:http://localhost:8180}
