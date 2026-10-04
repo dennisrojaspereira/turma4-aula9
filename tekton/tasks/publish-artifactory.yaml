@@ -1,0 +1,63 @@
+# Task publish-artifactory: publica os jars construidos pela task maven-sonar
+# no JFrog Artifactory local (container techpix-jfrog, scripts/jfrog-up.sh).
+# So roda DEPOIS dos gates (SAST e DAST): artefato publicado = artefato aprovado.
+# A versao vem do commit clonado (refs do clone raso); fallback: nome do PipelineRun.
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: publish-artifactory
+  namespace: techpix-ci
+spec:
+  params:
+    - name: revision
+      type: string
+      default: main
+  workspaces:
+    - name: source
+      description: workspace com o codigo ja compilado (target/*.jar)
+  steps:
+    - name: upload
+      image: curlimages/curl:8.10.1
+      workingDir: $(workspaces.source.path)
+      env:
+        - name: ART_URL
+          valueFrom:
+            secretKeyRef: { name: artifactory, key: url }
+        - name: ART_REPO
+          valueFrom:
+            secretKeyRef: { name: artifactory, key: repo }
+        - name: ART_USER
+          valueFrom:
+            secretKeyRef: { name: artifactory, key: user }
+        - name: ART_PASS
+          valueFrom:
+            secretKeyRef: { name: artifactory, key: pass }
+      script: |
+        #!/bin/sh
+        set -eu
+        # sha do commit clonado, sem precisar do git: o clone raso deixa a ref no filesystem
+        VERSION=$(cut -c1-7 ".git/refs/heads/$(params.revision)" 2>/dev/null || true)
+        [ -n "$VERSION" ] || VERSION=$(cut -c1-7 .git/HEAD 2>/dev/null || true)
+        [ -n "$VERSION" ] || VERSION="$(context.taskRun.name)"
+        DEST="$ART_URL/$ART_REPO/tech-pix/$VERSION"
+        echo "== publicando build $VERSION em $DEST"
+        FOUND=0
+        for JAR in monolith/target/*.jar fraud-service/target/*.jar; do
+          [ -f "$JAR" ] || continue
+          FOUND=1
+          NAME=$(basename "$JAR")
+          echo "   -> $NAME ($(du -h "$JAR" | cut -f1))"
+          curl -sf -u "$ART_USER:$ART_PASS" -T "$JAR" "$DEST/$NAME" >/dev/null
+        done
+        if [ "$FOUND" = 0 ]; then
+          echo "ERRO: nenhum jar em monolith/target ou fraud-service/target." >&2
+          echo "A task maven-sonar rodou nesta execucao?" >&2
+          exit 1
+        fi
+        # build-info simples: quem, quando, de qual commit
+        printf 'build=%s\nrevision=%s\ntaskRun=%s\ndate=%s\ngates=SAST(SonarQube)+DAST(ZAP)\n' \
+          "$VERSION" "$(params.revision)" "$(context.taskRun.name)" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+          > /tmp/build-info.txt
+        curl -sf -u "$ART_USER:$ART_PASS" -T /tmp/build-info.txt "$DEST/build-info.txt" >/dev/null
+        echo
+        echo "Publicado. Navegue: http://localhost:8082/ui/repos/tree/General/$ART_REPO"

@@ -1,0 +1,52 @@
+{
+  "uid": "techpix-home",
+  "title": "Tech Pix — Visão Geral",
+  "tags": ["techpix"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "refresh": "30s",
+  "time": { "from": "now-15m", "to": "now" },
+  "panels": [
+    {
+      "id": 1, "type": "text", "title": "",
+      "gridPos": { "h": 5, "w": 16, "x": 0, "y": 0 },
+      "options": { "mode": "markdown", "content": "# 🏦 Tech Pix — central da turma\nTodos os dashboards estão na lista ao lado →  · As pastas organizam por aula em [Dashboards](/dashboards).\n\n**Ferramentas:** [Painel do instrutor](http://localhost:8099) · [Prometheus](http://localhost:9090) · [SonarQube](http://localhost:9000/dashboard?id=tech-pix) · [JFrog](http://localhost:8082) · [Keycloak](http://localhost:8180) · [Tekton](http://localhost:9097) · [Gitea](http://localhost:3001/techpix/tech-pix) · [Lab Aula 9](http://localhost:8080/actuator/health)\n\n**Subir tudo:** `python scripts/sobe-tudo.py`" }
+    },
+    {
+      "id": 2, "type": "dashlist", "title": "📊 Todos os dashboards",
+      "gridPos": { "h": 10, "w": 8, "x": 16, "y": 0 },
+      "options": { "showHeadings": false, "showSearch": true, "showRecentlyViewed": false, "showStarred": false, "maxItems": 30, "query": "", "tags": [], "includeVars": false, "keepTime": false }
+    },
+    {
+      "id": 3, "type": "stat", "title": "Targets do Prometheus (1 = coletando)",
+      "gridPos": { "h": 5, "w": 16, "x": 0, "y": 5 },
+      "targets": [ { "expr": "sum by (job) (up)", "legendFormat": "{{job}}" } ],
+      "fieldConfig": { "defaults": { "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "green", "value": 1 } ] } }, "overrides": [] },
+      "options": { "colorMode": "background", "graphMode": "none", "textMode": "value_and_name", "reduceOptions": { "calcs": ["lastNotNull"] } }
+    },
+    {
+      "id": 4, "type": "timeseries", "title": "Pagamentos/s (aula 7 — app real)",
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 10 },
+      "targets": [ { "expr": "sum(rate(payment_create_seconds_count[1m]))", "legendFormat": "pagamentos/s" } ],
+      "fieldConfig": { "defaults": { "unit": "reqps", "custom": { "fillOpacity": 12 } }, "overrides": [] },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" } }
+    },
+    {
+      "id": 5, "type": "timeseries", "title": "Fraud p95 (aula 7 — app real)",
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 10 },
+      "targets": [ { "expr": "histogram_quantile(0.95, sum(rate(fraud_evaluation_seconds_bucket[5m])) by (le))", "legendFormat": "fraud p95" } ],
+      "fieldConfig": { "defaults": { "unit": "s", "custom": { "fillOpacity": 12 } }, "overrides": [] },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" } }
+    },
+    {
+      "id": 6, "type": "timeseries", "title": "Aula 9 — incidente em replay (PSP p95 e UNKNOWN)",
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 10 },
+      "targets": [
+        { "expr": "techpix_psp_transfer_p95_ms", "legendFormat": "psp p95 (ms)" },
+        { "expr": "techpix_payments_unknown", "legendFormat": "Pix em UNKNOWN" }
+      ],
+      "fieldConfig": { "defaults": { "custom": { "fillOpacity": 12 } }, "overrides": [] },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" } }
+    }
+  ]
+}

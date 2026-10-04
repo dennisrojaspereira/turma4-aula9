@@ -1,0 +1,110 @@
+{
+  "uid": "aula9",
+  "title": "Aula 9 — Cadê o Pix?",
+  "tags": ["techpix", "aula9", "observabilidade"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "refresh": "10s",
+  "time": { "from": "now-30m", "to": "now" },
+  "panels": [
+    {
+      "id": 1, "type": "text", "title": "",
+      "gridPos": { "h": 4, "w": 24, "x": 0, "y": 0 },
+      "options": { "mode": "markdown", "content": "# 🔎 Cadê o Pix? — o incidente reencenado ao vivo\n**Monitoramento** responde perguntas que você previu (está UP? CPU ok?). **Observabilidade** permite responder a que você NÃO previu: *\"cadê o Pix PIX-928371 do Carlos?\"* — O simulador reencena o incidente em **loop de 20 min**: na metade do ciclo acontece o *deploy v1.13.4* e a degradação começa. Health checks ficam **UP o tempo todo**. | Métricas = tendência (baixa cardinalidade) · Logs/Traces = o caso individual (`transaction_id`, `correlation_id`, `trace_id`) — por isso **não existe** painel por transação aqui." }
+    },
+    {
+      "id": 2, "type": "timeseries", "title": "Golden Signal 1 — LATENCY: p95 por dependência (ms)",
+      "gridPos": { "h": 8, "w": 6, "x": 0, "y": 4 },
+      "targets": [
+        { "expr": "techpix_psp_transfer_p95_ms", "legendFormat": "psp.transfer p95" },
+        { "expr": "techpix_fraud_p95_ms", "legendFormat": "fraud.check p95" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "ms", "custom": { "fillOpacity": 12 } }, "overrides": [] },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" } }
+    },
+    {
+      "id": 3, "type": "timeseries", "title": "Golden Signal 2 — TRAFFIC: Pix/s (Rate do RED)",
+      "gridPos": { "h": 8, "w": 6, "x": 6, "y": 4 },
+      "targets": [ { "expr": "techpix_payments_per_second", "legendFormat": "pagamentos/s" } ],
+      "fieldConfig": { "defaults": { "unit": "reqps", "min": 0, "max": 30, "custom": { "fillOpacity": 12 } }, "overrides": [] },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" } }
+    },
+    {
+      "id": 4, "type": "timeseries", "title": "Golden Signal 3 — ERRORS: HTTP 5xx % (quase nada!)",
+      "gridPos": { "h": 8, "w": 6, "x": 12, "y": 4 },
+      "targets": [ { "expr": "techpix_http_5xx_percent", "legendFormat": "5xx %" } ],
+      "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "max": 5, "custom": { "fillOpacity": 12 } }, "overrides": [] },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" } }
+    },
+    {
+      "id": 5, "type": "timeseries", "title": "Golden Signal 4 — SATURATION: fila é saturação",
+      "gridPos": { "h": 8, "w": 6, "x": 18, "y": 4 },
+      "targets": [
+        { "expr": "techpix_psp_pool_pending", "legendFormat": "psp pool pending (fila por conexão)" },
+        { "expr": "techpix_kafka_consumer_lag", "legendFormat": "kafka consumer lag" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short", "custom": { "fillOpacity": 12 } }, "overrides": [] },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" } }
+    },
+    {
+      "id": 6, "type": "stat", "title": "💰 Pix em UNKNOWN (métrica de NEGÓCIO)",
+      "gridPos": { "h": 8, "w": 4, "x": 0, "y": 12 },
+      "targets": [ { "expr": "techpix_payments_unknown", "legendFormat": "UNKNOWN" } ],
+      "fieldConfig": { "defaults": { "unit": "short", "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "orange", "value": 1 }, { "color": "red", "value": 10 } ] } }, "overrides": [] },
+      "options": { "colorMode": "background", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } }
+    },
+    {
+      "id": 7, "type": "timeseries", "title": "USE — Utilization: CPU por serviço (no incidente 1, CPU NÃO acusa nada)",
+      "gridPos": { "h": 8, "w": 8, "x": 4, "y": 12 },
+      "targets": [ { "expr": "techpix_cpu_percent", "legendFormat": "{{service}}" } ],
+      "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "max": 100, "custom": { "fillOpacity": 10 } }, "overrides": [] },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" } }
+    },
+    {
+      "id": 8, "type": "timeseries", "title": "Backlog de reconciliação (incidente 2: cresce sem nenhum erro HTTP)",
+      "gridPos": { "h": 8, "w": 6, "x": 12, "y": 12 },
+      "targets": [ { "expr": "techpix_reconciliation_backlog", "legendFormat": "pendentes de reconciliação" } ],
+      "fieldConfig": { "defaults": { "unit": "short", "custom": { "fillOpacity": 12 } }, "overrides": [] },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" } }
+    },
+    {
+      "id": 9, "type": "stat", "title": "Deploy no ar (annotation do CD)",
+      "gridPos": { "h": 8, "w": 6, "x": 18, "y": 12 },
+      "targets": [ { "expr": "techpix_deploy_active", "legendFormat": "{{version}}" } ],
+      "fieldConfig": { "defaults": { "mappings": [ { "type": "value", "options": { "0": { "text": "antes do deploy — baseline", "color": "green" }, "1": { "text": "DEPLOY APLICADO — compare as curvas!", "color": "red" } } } ], "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null } ] } }, "overrides": [] },
+      "options": { "colorMode": "background", "graphMode": "none", "textMode": "value_and_name", "reduceOptions": { "calcs": ["lastNotNull"] } }
+    },
+    {
+      "id": 10, "type": "gauge", "title": "SLI: % de Pix concluídos em ≤ 5s  (SLO: 99,9%)",
+      "gridPos": { "h": 8, "w": 6, "x": 0, "y": 20 },
+      "targets": [ { "expr": "techpix_sli_pix_under_5s_ratio * 100", "legendFormat": "SLI" } ],
+      "fieldConfig": { "defaults": { "unit": "percent", "min": 99.5, "max": 100, "decimals": 2, "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "green", "value": 99.9 } ] } }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } }
+    },
+    {
+      "id": 11, "type": "text", "title": "RED × USE — quem detecta o quê",
+      "gridPos": { "h": 8, "w": 6, "x": 6, "y": 20 },
+      "options": { "mode": "markdown", "content": "**RED** (serviços): **R**ate normal · **E**rrors baixos (timeout vira UNKNOWN, não 500!) · **D**uration explode ⟵ *é aqui que o incidente 1 aparece*\n\n**USE** (recursos): **U**tilization normal (CPU/RAM ok) · **S**aturation = **fila** → `pool_pending` no psp-adapter ⟵ *a pista da causa* · **E**rrors de recurso: nenhum\n\n➡️ Quem só olha CPU e erro **não vê** este incidente. Quem olha duração e fila, vê." }
+    },
+    {
+      "id": 12, "type": "text", "title": "MTTD · MTTA · MTTR do incidente 1",
+      "gridPos": { "h": 8, "w": 6, "x": 12, "y": 20 },
+      "options": { "mode": "markdown", "content": "| 21:03 | incidente começa |\n|---|---|\n| 21:05 | alerta `payments_unknown > 10` |\n| 21:07 | engenheiro assume |\n| 21:12 | transação reconciliada |\n\n**MTTD = 2 min** (detecção) · **MTTA = 2 min** (resposta) · **MTTR = 9 min** (início → cliente atendido)\n\n> Observabilidade não é ter mais dashboards. É **reduzir o tempo de diagnóstico e recuperação**." }
+    },
+    {
+      "id": 13, "type": "text", "title": "Cardinalidade — por que NÃO há painel do PIX-928371",
+      "gridPos": { "h": 8, "w": 6, "x": 18, "y": 20 },
+      "options": { "mode": "markdown", "content": "`pix_status{transaction_id=\"PIX-928371\"}` ❌\n\nCada valor de label = **uma série temporal nova**. A 16 Pix/s ≈ **1,4 milhão de séries/dia** → o Prometheus morre.\n\n**Métricas**: `status`, `provider`, `operation` (baixa cardinalidade)\n**Logs/Traces**: `transaction_id`, `correlation_id`, `trace_id` (alta cardinalidade)\n\n➡️ A pergunta \"cadê ESTE Pix?\" se responde com `scripts/investigate-logs.sh` e trace — não aqui." }
+    },
+    {
+      "id": 14, "type": "text", "title": "A solução do caso — UNKNOWN → retry → idempotência → reconciliação → DLQ",
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 28 },
+      "options": { "mode": "markdown", "content": "1. **UNKNOWN ≠ FAILED**: o PSP deu timeout *depois* de processar. O sistema admite: \"não tenho evidência\". Débito feito, confirmação perdida.\n2. **Retry cego?** O PSP processaria DE NOVO → `DUPLICATE TRANSFER` (R$ 500 em vez de R$ 250). *Retry de operação financeira ≠ retry de leitura HTTP.*\n3. **Idempotency-Key** torna a repetição segura — mas não revela o resultado real.\n4. **Reconciliação** pergunta às fontes da verdade: Ledger = `DEBITED`, PSP = `COMPLETED` (e2e_id) → `UNKNOWN → APPROVED`. **O dinheiro nunca esteve perdido; o sistema perdeu a *certeza*.**\n5. O evento de correção quebra um consumer → 3 retries → **DLQ**. DLQ preserva, não resolve: corrigir a causa, depois *replay* (seguro só porque o consumer é idempotente)." }
+    },
+    {
+      "id": 15, "type": "text", "title": "RCA — sintoma ≠ impacto ≠ causa  ·  e o papel da IA",
+      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 28 },
+      "options": { "mode": "markdown", "content": "| Nível | Incidente 1 |\n|---|---|\n| Sintoma | timeout no PSP (p95 5s) |\n| Impacto | 25 Pix em UNKNOWN; SLO estourado (99,75% < 99,9%) |\n| Causa intermediária | psp-adapter **saturado** (pool com fila) |\n| Causa raiz | deploy v1.13.4: `PSP_POOL_SIZE` 20 → **2** |\n\n\"Deploy às 21:00 e latência às 21:00\" é **correlação**. Vira causalidade com: mecanismo observado (span `pool.acquire` 2,9s) + diff da config + rollback que normaliza.\n\n🤖 **AI proposes hypotheses. Evidence decides.** A IA reconstrói timeline e ranqueia hipóteses; quem muda estado de dinheiro é humano com evidência de reconciliação.\n\n> **Observabilidade é conseguir explicar onde está o dinheiro.**" }
+    }
+  ]
+}

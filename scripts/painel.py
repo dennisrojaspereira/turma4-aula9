@@ -88,6 +88,37 @@ ACTIONS = {
     "sec-runs":        ("Execucoes da pipeline", "kubectl -n techpix-ci get pipelineruns"),
     "sec-dashboard":   ("Reabrir Tekton Dashboard (port-forward 9097)", "(kubectl -n tekton-pipelines port-forward svc/tekton-dashboard 9097:9097 >/dev/null 2>&1 &) && echo 'UI: http://localhost:9097' && sleep 1"),
     "sec-keycloak":    ("Subir Keycloak (realm techpix)", "bash scripts/keycloak-up.sh"),
+    "sec-jfrog-up":    ("Subir JFrog Artifactory (:8082)", "bash scripts/jfrog-up.sh"),
+    "sec-sim-commit":  ("Imitar commit + pipeline + publicar no JFrog", "bash scripts/simulate-commit.sh"),
+    "sec-sim-vuln":    ("Imitar commit VULNERAVEL (gate deve reprovar)", "bash scripts/simulate-commit.sh vulneravel"),
+    "sec-sim-fix":     ("Corrigir a vulnerabilidade + pipeline", "bash scripts/simulate-commit.sh corrigir"),
+    "sec-jfrog-list":  ("Artefatos publicados no JFrog", "curl -s -u admin:password -X POST http://localhost:8082/artifactory/api/search/aql -H 'Content-Type: text/plain' -d 'items.find({\\\"repo\\\":\\\"example-repo-local\\\"}).include(\\\"path\\\",\\\"name\\\",\\\"size\\\").sort({\\\"$desc\\\":[\\\"created\\\"]})' | python -c \"import json,sys; r=json.load(sys.stdin).get('results',[]); print('repositorio vazio' if not r else '\\n'.join('%-70s %10.1f KB' % (i['path']+'/'+i['name'], i['size']/1024) for i in r))\""),
+    # Aula 9 - lab 23 "Cade o Pix?" (incidente 1, fases 1-15)
+    "lab9-up":         ("Subir o ambiente do lab (:8080, zera o estado)", "bash scripts/lab9-up.sh"),
+    "lab9-status":     ("Estado do laboratorio", "python scripts/aula9/lab9.py status"),
+    "lab9-health":     ("Fase 1 - health check (esta tudo verde?)", "curl -s localhost:8080/actuator/health"),
+    "lab9-logs":       ("Fase 2 - logs da transacao PIX-928371", "bash scripts/investigate-logs.sh PIX-928371"),
+    "lab9-corr":       ("Fase 3 - seguir o correlation_id abc123", "bash scripts/find-correlation.sh abc123"),
+    "lab9-trace":      ("Fase 4 - trace distribuido", "bash scripts/investigate-trace.sh PIX-928371"),
+    "lab9-metrics":    ("Fase 5 - dashboard de metricas (RED/USE)", "bash scripts/investigate-metrics.sh"),
+    "lab9-state":      ("Fase 7 - estado da transacao (UNKNOWN?)", "curl -s localhost:8080/payments/PIX-928371"),
+    "lab9-retry":      ("Fase 8 - retry: voce executaria?", "bash scripts/retry-payment.sh PIX-928371"),
+    "lab9-retry-run":  ("Fase 8 - retry SEM idempotencia (simulacao)", "bash scripts/retry-payment.sh PIX-928371 --executar"),
+    "lab9-retry-idem": ("Fase 9 - retry COM Idempotency-Key", "bash scripts/retry-payment.sh PIX-928371 --idempotency-key PIX-928371"),
+    "lab9-reconcile":  ("Fase 10 - reconciliacao (ledger + PSP)", "bash scripts/reconcile.sh PIX-928371"),
+    "lab9-dlq":        ("Fase 11 - mostrar a DLQ", "bash scripts/dlq-show.sh"),
+    "lab9-dlq-replay": ("Fase 11 - replay da DLQ", "bash scripts/dlq-show.sh replay"),
+    "lab9-context":    ("Fase 15 - incident-context.json (para a IA)", "cat scripts/aula9/incident-context.json"),
+    "lab9-reset":      ("Zerar o lab (volta ao incidente 1)", "bash scripts/lab9-reset.sh"),
+    "lab9-stop":       ("Derrubar o ambiente do lab", "bash scripts/lab9-up.sh stop"),
+    # Aula 9 - desafio final (incidente 2)
+    "lab9-inc2":       ("Ativar o desafio final (novo chamado)", "bash scripts/lab9-incident2.sh"),
+    "lab9-logs2":      ("Logs da transacao PIX-554219", "bash scripts/investigate-logs.sh PIX-554219"),
+    "lab9-corr2":      ("Correlation def456", "bash scripts/find-correlation.sh def456"),
+    "lab9-trace2":     ("Trace de PIX-554219", "bash scripts/investigate-trace.sh PIX-554219"),
+    "lab9-state2":     ("Estado de PIX-554219", "curl -s localhost:8080/payments/PIX-554219"),
+    "lab9-reconcile2": ("Reconciliar PIX-554219", "bash scripts/reconcile.sh PIX-554219"),
+    "lab9-inc2-off":   ("Desativar (volta ao incidente 1)", "bash scripts/lab9-incident2.sh off"),
     # Historia
     "steps":           ("Listar as 14 etapas (tags)", "git tag -l 'aula07-*'"),
 }
@@ -103,7 +134,15 @@ SECTIONS = [
     ("Caos — lab 20 (em código)", ["chaos-latency", "chaos-errors", "chaos-off", "chaos-status"]),
     ("Istio — lab 20 pelo mesh", ["istio-sidecars", "istio-delay", "istio-abort", "istio-resilience", "istio-vs", "istio-off"]),
     ("GitOps / Argo CD", ["argocd-apps", "drift", "argocd-forward", "argocd-pass", "gitea-push"]),
-    ("Segurança — labs 21/22 (Aula 8)", ["sec-tekton-up", "sec-pipeline", "sec-runs", "sec-dashboard", "sec-keycloak"]),
+    ("Segurança — labs 21/22 (Aula 8)", ["sec-tekton-up", "sec-pipeline", "sec-runs", "sec-dashboard", "sec-keycloak",
+                                         "sec-jfrog-up", "sec-sim-commit", "sec-sim-vuln", "sec-sim-fix",
+                                         "sec-jfrog-list"]),
+    ("Aula 9 — Cadê o Pix? (lab 23)", ["lab9-up", "lab9-status", "lab9-health", "lab9-logs", "lab9-corr",
+                                       "lab9-trace", "lab9-metrics", "lab9-state", "lab9-retry", "lab9-retry-run",
+                                       "lab9-retry-idem", "lab9-reconcile", "lab9-dlq", "lab9-dlq-replay",
+                                       "lab9-context", "lab9-reset", "lab9-stop"]),
+    ("Aula 9 — desafio final (incidente 2)", ["lab9-inc2", "lab9-logs2", "lab9-corr2", "lab9-trace2",
+                                              "lab9-state2", "lab9-reconcile2", "lab9-inc2-off"]),
     ("História", ["steps"]),
 ]
 
@@ -120,6 +159,8 @@ LINKS = [
     ("Tekton Dashboard", "http://localhost:9097/#/namespaces/techpix-ci/pipelineruns"),
     ("SonarQube", "http://localhost:9000/dashboard?id=tech-pix"),
     ("Keycloak", "http://localhost:8180"),
+    ("JFrog", "http://localhost:8082"),
+    ("Lab Aula 9", "http://localhost:8080/actuator/health"),
 ]
 
 PAGE = """<!DOCTYPE html>
@@ -453,6 +494,7 @@ def build_creds():
         ("Prometheus e apps", "sem senha"),
         ("SonarQube", "admin / <code>admin</code>"),
         ("Keycloak", "admin / <code>admin</code> · app: maria ou joao / <code>techpix123</code>"),
+        ("JFrog", "admin / <code>password</code>"),
     ]
     return " ".join(f"<span><b>{name}:</b> {info}</span>" for name, info in items)
 

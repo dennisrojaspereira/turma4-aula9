@@ -1,0 +1,104 @@
+{
+  "uid": "red-fraud",
+  "title": "Fraud Service — RED & Golden Signals",
+  "tags": ["techpix", "servicos", "red"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "refresh": "10s",
+  "time": { "from": "now-30m", "to": "now" },
+  "panels": [
+    {
+      "id": 1, "type": "text", "title": "",
+      "gridPos": { "h": 3, "w": 24, "x": 0, "y": 0 },
+      "options": { "mode": "markdown", "content": "**RED** do serviço extraído + o lado **consumidor de eventos** (idempotência aparece aqui: duplicatas ignoradas). Injete problemas com `scripts/chaos.sh latency 800` ou `errors 0.5` e veja os sinais reagirem." }
+    },
+    {
+      "id": 2, "type": "timeseries", "title": "R — Rate: avaliações de fraude/s",
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 3 },
+      "targets": [
+        { "expr": "sum(rate(fraud_evaluation_seconds_count{job=\"techpix-fraud-service\"}[1m]))", "legendFormat": "avaliações/s" },
+        { "expr": "sum(rate(http_server_requests_seconds_count{job=\"techpix-fraud-service\",uri!~\"/actuator.*\"}[1m]))", "legendFormat": "HTTP total/s" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "reqps", "custom": { "fillOpacity": 10 } }, "overrides": [] },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" } }
+    },
+    {
+      "id": 3, "type": "timeseries", "title": "E — Errors: % 5xx (o chaos.sh aparece aqui)",
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 3 },
+      "targets": [
+        { "expr": "100 * sum(rate(http_server_requests_seconds_count{job=\"techpix-fraud-service\",status=~\"5..\"}[1m])) / sum(rate(http_server_requests_seconds_count{job=\"techpix-fraud-service\"}[1m]))", "legendFormat": "5xx %" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "custom": { "fillOpacity": 10 }, "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "red", "value": 5 } ] } }, "overrides": [] },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" } }
+    },
+    {
+      "id": 4, "type": "timeseries", "title": "D — Duration: avaliação p50 / p95 / p99",
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 3 },
+      "targets": [
+        { "expr": "histogram_quantile(0.50, sum(rate(fraud_evaluation_seconds_bucket{job=\"techpix-fraud-service\"}[5m])) by (le))", "legendFormat": "p50" },
+        { "expr": "histogram_quantile(0.95, sum(rate(fraud_evaluation_seconds_bucket{job=\"techpix-fraud-service\"}[5m])) by (le))", "legendFormat": "p95" },
+        { "expr": "histogram_quantile(0.99, sum(rate(fraud_evaluation_seconds_bucket{job=\"techpix-fraud-service\"}[5m])) by (le))", "legendFormat": "p99" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "s", "custom": { "fillOpacity": 10 } }, "overrides": [] },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" } }
+    },
+    {
+      "id": 5, "type": "timeseries", "title": "Tempo por regra (p95) — qual regra pesa?",
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 11 },
+      "targets": [
+        { "expr": "histogram_quantile(0.95, sum(rate(fraud_rule_seconds_bucket{job=\"techpix-fraud-service\"}[5m])) by (le, rule))", "legendFormat": "{{rule}}" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "s", "custom": { "fillOpacity": 8 } }, "overrides": [] },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" } }
+    },
+    {
+      "id": 6, "type": "timeseries", "title": "Consumer de eventos: aplicados × DUPLICADOS ignorados (idempotência)",
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 11 },
+      "targets": [
+        { "expr": "rate(fraud_events_applied_total{job=\"techpix-fraud-service\"}[1m])", "legendFormat": "aplicados/s" },
+        { "expr": "rate(fraud_events_duplicates_total{job=\"techpix-fraud-service\"}[1m])", "legendFormat": "duplicados ignorados/s" }
+      ],
+      "fieldConfig": { "defaults": { "custom": { "fillOpacity": 10 } }, "overrides": [] },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" } }
+    },
+    {
+      "id": 7, "type": "timeseries", "title": "Listener Kafka: tempo médio de processamento",
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 11 },
+      "targets": [
+        { "expr": "rate(spring_kafka_listener_seconds_sum{job=\"techpix-fraud-service\"}[1m]) / rate(spring_kafka_listener_seconds_count{job=\"techpix-fraud-service\"}[1m])", "legendFormat": "proc. médio" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "s", "custom": { "fillOpacity": 10 } }, "overrides": [] },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" } }
+    },
+    {
+      "id": 8, "type": "timeseries", "title": "USE — CPU",
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 19 },
+      "targets": [
+        { "expr": "process_cpu_usage{job=\"techpix-fraud-service\"} * 100", "legendFormat": "processo {{instance}}" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "max": 100, "custom": { "fillOpacity": 10 } }, "overrides": [] },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" } }
+    },
+    {
+      "id": 9, "type": "timeseries", "title": "USE — Saturation: pool do fraud_db (pending = fila)",
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 19 },
+      "targets": [
+        { "expr": "hikaricp_connections_active{job=\"techpix-fraud-service\"}", "legendFormat": "ativas {{instance}}" },
+        { "expr": "hikaricp_connections_pending{job=\"techpix-fraud-service\"}", "legendFormat": "PENDING {{instance}}" },
+        { "expr": "hikaricp_connections_max{job=\"techpix-fraud-service\"}", "legendFormat": "max {{instance}}" }
+      ],
+      "fieldConfig": { "defaults": { "custom": { "fillOpacity": 10 } }, "overrides": [] },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" } }
+    },
+    {
+      "id": 10, "type": "timeseries", "title": "USE — heap e threads",
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 19 },
+      "targets": [
+        { "expr": "sum by (instance) (jvm_memory_used_bytes{job=\"techpix-fraud-service\",area=\"heap\"})", "legendFormat": "heap {{instance}}" },
+        { "expr": "jvm_threads_live_threads{job=\"techpix-fraud-service\"}", "legendFormat": "threads {{instance}}" }
+      ],
+      "fieldConfig": { "defaults": { "custom": { "fillOpacity": 10 } }, "overrides": [] },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" } }
+    }
+  ]
+}

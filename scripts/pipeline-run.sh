@@ -9,7 +9,11 @@ cd "$(dirname "$0")/.."
 kubectl config use-context kind-techpix >/dev/null
 
 # garante que a pipeline analisa o codigo mais recente, nao o do ultimo push
-if docker ps --format '{{.Names}}' | grep -qx techpix-gitea; then
+# (TECHPIX_SKIP_PUSH=1: o chamador ja empurrou o commit que quer analisar,
+#  ex. scripts/simulate-commit.sh; um push --force daqui o apagaria)
+if [ -n "${TECHPIX_SKIP_PUSH:-}" ]; then
+  echo "== TECHPIX_SKIP_PUSH definido: usando o que ja esta no Gitea"
+elif docker ps --format '{{.Names}}' | grep -qx techpix-gitea; then
   echo "== push do codigo atual para o Gitea local"
   git push -q local main --force
 else

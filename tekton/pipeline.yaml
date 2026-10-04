@@ -1,7 +1,8 @@
-# Pipeline de seguranca: clone -> SAST (codigo) -> DAST (aplicacao rodando).
-# 1. fetch: clona o repositorio do Gitea local (o cluster enxerga via host.docker.internal)
-# 2. sast:  SonarQube analisa o CODIGO; o quality gate reprova = pipeline falha
-# 3. dast:  OWASP ZAP ataca a APLICACAO em execucao no cluster (baseline scan)
+# Pipeline de seguranca: clone -> SAST (codigo) -> DAST (aplicacao rodando) -> publish.
+# 1. fetch:   clona o repositorio do Gitea local (o cluster enxerga via host.docker.internal)
+# 2. sast:    SonarQube analisa o CODIGO; o quality gate reprova = pipeline falha
+# 3. dast:    OWASP ZAP ataca a APLICACAO em execucao no cluster (baseline scan)
+# 4. publish: jars aprovados pelos gates vao para o JFrog Artifactory local (scripts/jfrog-up.sh)
 apiVersion: tekton.dev/v1
 kind: Pipeline
 metadata:
@@ -51,3 +52,14 @@ spec:
       params:
         - name: target-url
           value: $(params.target-url)
+    - name: publish
+      taskRef:
+        name: publish-artifactory
+      runAfter:
+        - dast
+      params:
+        - name: revision
+          value: $(params.revision)
+      workspaces:
+        - name: source
+          workspace: source

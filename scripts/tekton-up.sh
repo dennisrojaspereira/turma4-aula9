@@ -69,6 +69,22 @@ if [ -z "$TOKEN" ]; then
   exit 1
 fi
 
+# Gate proprio: reprova qualquer violacao ou hotspot nao revisado em CODIGO NOVO.
+# O "Sonar way" exige 80% de cobertura no codigo novo, mas a pipeline pula testes
+# (Testcontainers precisa de Docker); sem isso qualquer commit Java reprovaria.
+echo "== criando quality gate techpix-security e associando ao projeto"
+curl -s -u "admin:$SONAR_ADMIN_PASS" -X POST \
+  "http://localhost:$SONAR_PORT/api/qualitygates/create?name=techpix-security" >/dev/null || true
+curl -s -u "admin:$SONAR_ADMIN_PASS" -X POST \
+  "http://localhost:$SONAR_PORT/api/qualitygates/create_condition" \
+  -d "gateName=techpix-security&metric=new_violations&op=GT&error=0" >/dev/null || true
+curl -s -u "admin:$SONAR_ADMIN_PASS" -X POST \
+  "http://localhost:$SONAR_PORT/api/qualitygates/create_condition" \
+  -d "gateName=techpix-security&metric=new_security_hotspots_reviewed&op=LT&error=100" >/dev/null || true
+curl -s -u "admin:$SONAR_ADMIN_PASS" -X POST \
+  "http://localhost:$SONAR_PORT/api/qualitygates/select" \
+  -d "gateName=techpix-security&projectKey=tech-pix" >/dev/null || true
+
 echo "== aplicando namespace techpix-ci e cache Maven"
 kubectl apply -f tekton/namespace.yaml
 

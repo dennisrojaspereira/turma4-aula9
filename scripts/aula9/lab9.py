@@ -517,6 +517,83 @@ def cmd_reconcile(state, args):
 # Servidor HTTP
 # ---------------------------------------------------------------------------
 
+# ---------------------------------------------------------------------------
+# /metrics: reencena o incidente em loop para o Prometheus/Grafana.
+# Loop de 20 min: metade "calmaria", na metade acontece o "deploy" e a
+# degradacao cresce ate o fim do ciclo. O dashboard "Aula 9 - Cade o Pix?"
+# (docker/grafana/dashboards/aula9.json) le estas series.
+# ---------------------------------------------------------------------------
+
+LOOP_SECONDS = 1200
+
+
+def _ramp(phase, start, baseline, peak):
+    """baseline ate 'start'; depois cresce linearmente ate 'peak' no fim do loop."""
+    if phase < start:
+        return baseline
+    return baseline + (peak - baseline) * min(1.0, (phase - start) / (1.0 - start))
+
+
+def render_metrics(state):
+    phase = (time.time() % LOOP_SECONDS) / LOOP_SECONDS  # 0.0 -> 1.0; deploy em 0.5
+    deploy = 1 if phase >= 0.5 else 0
+    lines = [
+        "# HELP techpix_lab9_info Incidente ativo do laboratorio Aula 9",
+        "# TYPE techpix_lab9_info gauge",
+        'techpix_lab9_info{incident="%d"} 1' % state["incident"],
+        "# TYPE techpix_payments_per_second gauge",
+        "techpix_payments_per_second %.1f" % (15.8 + 0.4 * phase),
+        "# TYPE techpix_http_5xx_percent gauge",
+        "techpix_http_5xx_percent %.2f" % (0.1 if not deploy else 0.4),
+        "# TYPE techpix_deploy_active gauge",
+    ]
+    if state["incident"] == 2:
+        lines += [
+            'techpix_deploy_active{version="v1.13.5"} %d' % deploy,
+            "# TYPE techpix_fraud_p95_ms gauge",
+            "techpix_fraud_p95_ms %.0f" % _ramp(phase, 0.5, 62, 2650),
+            "# TYPE techpix_psp_transfer_p95_ms gauge",
+            "techpix_psp_transfer_p95_ms 190",
+            "# TYPE techpix_cpu_percent gauge",
+            'techpix_cpu_percent{service="payment-service"} 31',
+            'techpix_cpu_percent{service="psp-adapter"} 18',
+            'techpix_cpu_percent{service="fraud-service"} %.0f' % _ramp(phase, 0.5, 35, 95),
+            "# TYPE techpix_kafka_consumer_lag gauge",
+            "techpix_kafka_consumer_lag %.0f" % _ramp(phase, 0.5, 0, 1800),
+            "# TYPE techpix_reconciliation_backlog gauge",
+            "techpix_reconciliation_backlog %.0f" % _ramp(phase, 0.5, 4, 340),
+            "# TYPE techpix_psp_pool_pending gauge",
+            "techpix_psp_pool_pending 0",
+            "# TYPE techpix_payments_unknown gauge",
+            "techpix_payments_unknown %.0f" % _ramp(phase, 0.5, 0, 3),
+            "# TYPE techpix_sli_pix_under_5s_ratio gauge",
+            "techpix_sli_pix_under_5s_ratio %.4f" % (0.9995 if not deploy else 0.9990),
+        ]
+    else:
+        lines += [
+            'techpix_deploy_active{version="v1.13.4"} %d' % deploy,
+            "# TYPE techpix_psp_transfer_p95_ms gauge",
+            "techpix_psp_transfer_p95_ms %.0f" % _ramp(phase, 0.5, 185, 4950),
+            "# TYPE techpix_fraud_p95_ms gauge",
+            "techpix_fraud_p95_ms 60",
+            "# TYPE techpix_cpu_percent gauge",
+            'techpix_cpu_percent{service="payment-service"} 31',
+            'techpix_cpu_percent{service="psp-adapter"} 18',
+            'techpix_cpu_percent{service="fraud-service"} 35',
+            "# TYPE techpix_psp_pool_pending gauge",
+            "techpix_psp_pool_pending %.0f" % _ramp(phase, 0.5, 0, 16),
+            "# TYPE techpix_kafka_consumer_lag gauge",
+            "techpix_kafka_consumer_lag 0",
+            "# TYPE techpix_reconciliation_backlog gauge",
+            "techpix_reconciliation_backlog 0",
+            "# TYPE techpix_payments_unknown gauge",
+            "techpix_payments_unknown %.0f" % _ramp(phase, 0.5, 0, 25),
+            "# TYPE techpix_sli_pix_under_5s_ratio gauge",
+            "techpix_sli_pix_under_5s_ratio %.4f" % (0.9995 if not deploy else 0.9975),
+        ]
+    return "\n".join(lines) + "\n"
+
+
 HEALTH = {
     "status": "UP",
     "components": {
@@ -544,6 +621,13 @@ class Handler(BaseHTTPRequestHandler):
         state = load_state()
         if self.path == "/actuator/health":
             self._send(200, HEALTH)
+        elif self.path == "/metrics":
+            body = render_metrics(state).encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-Type", "text/plain; version=0.0.4")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
         elif self.path.startswith("/payments/"):
             txid = self.path.split("/")[2]
             pay = state["payments"].get(txid)

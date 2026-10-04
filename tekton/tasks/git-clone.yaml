@@ -1,5 +1,7 @@
 # Task git-clone: clona o repositorio no workspace "source".
-# Clone raso (--depth 1): a pipeline so precisa do estado atual do codigo, nao do historico.
+# Clone COMPLETO (sem --depth 1): o SonarQube precisa do blame do git para saber
+# quais linhas sao novas; num clone raso ele trata codigo antigo como novo e o
+# quality gate reprova por motivos errados (cobertura/violacoes de codigo velho).
 apiVersion: tekton.dev/v1
 kind: Task
 metadata:
@@ -26,5 +28,5 @@ spec:
         set -eu
         # limpa o workspace: o PVC pode conter restos de uma execucao anterior
         rm -rf ./* ./.git
-        git clone --depth 1 --branch "$(params.revision)" "$(params.url)" .
+        git clone --branch "$(params.revision)" "$(params.url)" .
         git log -1 --oneline

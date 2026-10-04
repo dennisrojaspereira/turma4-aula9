@@ -113,6 +113,33 @@ SPRING_PROFILES_ACTIVE=secure ./mvnw -pl monolith spring-boot:run
 
 Sem o profile `secure`, nada muda: os labs anteriores e os testes continuam funcionando sem Keycloak.
 
+O realm agora traz usuários realistas (maria/admin, ana.lima/suporte, beatriz.rocha/compliance, carlos.andrade e joao/clientes — senha `techpix123`) e os dois serviços como clients confidenciais com service account. A demonstração de **serviço falando com serviço** (client credentials do monolito → introspection no Fraud Service → autorizado pela role `fraud-evaluate`; token de usuário → negado):
+
+```bash
+scripts/keycloak-m2m-demo.sh
+```
+
+A pipeline também publica os artefatos aprovados num **JFrog Artifactory** local, e dá para encenar o ciclo completo de CI (commit → gates → publicação) sem tocar no seu repositório — os commits simulados acontecem num clone temporário do Gitea:
+
+```bash
+scripts/jfrog-up.sh                          # Artifactory OSS em :8082 (admin/password)
+scripts/simulate-commit.sh                   # commit inofensivo -> SAST -> DAST -> publish
+scripts/simulate-commit.sh vulneravel        # senha hardcoded + DES/MD5 -> gate REPROVA
+scripts/simulate-commit.sh corrigir          # remove a vulnerabilidade -> volta a passar
+```
+
+### Subir tudo com um comando (sem .sh)
+
+Depois de provisionar uma vez (cluster kind, Gitea, Tekton, JFrog), qualquer reboot se resolve com:
+
+```bash
+python scripts/sobe-tudo.py                  # Docker, compose, kind, port-forwards, lab 9, painel
+```
+
+### Dashboards do Grafana
+
+`http://localhost:3000` abre a **Visão Geral** (lista de todos os dashboards + status dos targets). Pastas em `/dashboards`: **Aula 7** (Payment vs Fraud), **Serviços — RED & Golden Signals** (Monolith e Fraud Service: Rate/Errors/Duration, pool HikariCP, eventos e idempotência, CPU/heap) e **Aula 9 — Observabilidade** (o incidente "Cadê o Pix?" reencenado em loop de 20 min, com os conceitos da aula nos painéis).
+
 ### Aula 9 — Observabilidade e Resiliência (laboratório final "Cadê o Pix?")
 
 Investigação de incidente: o sistema está "todo verde", mas um Pix de R$ 250,00 saiu da conta e não chegou ao destinatário. O aluno segue logs estruturados, correlation ID, trace, métricas (RED/USE/Golden Signals), estado UNKNOWN, retry vs idempotência, reconciliação, DLQ, SLI/SLO, MTTD/MTTR, RCA e IA — tudo dentro do mesmo incidente. Roda sem cluster, sem Kafka e sem o monólito (simulador autocontido em Python):

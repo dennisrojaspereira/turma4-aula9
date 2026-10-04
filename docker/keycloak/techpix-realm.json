@@ -12,7 +12,27 @@
       },
       {
         "name": "techpix-user",
-        "description": "Usuario comum da Tech Pix"
+        "description": "Usuario comum da Tech Pix (cliente do app)"
+      },
+      {
+        "name": "techpix-suporte",
+        "description": "Suporte N1/N2: consulta pagamentos, nao altera estado"
+      },
+      {
+        "name": "techpix-compliance",
+        "description": "Compliance: relatorios, reconciliacao, auditoria"
+      },
+      {
+        "name": "fraud-evaluate",
+        "description": "Permissao de SERVICO: chamar POST /fraud/evaluations no Fraud Service"
+      },
+      {
+        "name": "payments-read",
+        "description": "Permissao de SERVICO: consultar pagamentos no monolito"
+      },
+      {
+        "name": "payments-write",
+        "description": "Permissao de SERVICO: criar/alterar pagamentos no monolito"
       }
     ]
   },
@@ -20,7 +40,7 @@
     {
       "clientId": "techpix-monolith",
       "name": "Tech Pix Monolith",
-      "description": "Cliente confidencial do monolito (authorization code + password grant para demo + client credentials)",
+      "description": "Cliente confidencial do monolito (authorization code + password grant para demo + client credentials para falar com o Fraud Service)",
       "enabled": true,
       "protocol": "openid-connect",
       "publicClient": false,
@@ -53,6 +73,47 @@
             "access.token.claim": "true",
             "userinfo.token.claim": "true"
           }
+        },
+        {
+          "name": "audience-fraud-service",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "techpix-fraud-service",
+            "id.token.claim": "false",
+            "access.token.claim": "true"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "techpix-fraud-service",
+      "name": "Tech Pix Fraud Service",
+      "description": "Cliente confidencial do Fraud Service: valida (introspecta) tokens recebidos do monolito e consome eventos",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "secret": "techpix-fraud-secret",
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "fullScopeAllowed": true,
+      "protocolMappers": [
+        {
+          "name": "realm-roles-as-roles-claim",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "consentRequired": false,
+          "config": {
+            "claim.name": "roles",
+            "jsonType.label": "String",
+            "multivalued": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
         }
       ]
     }
@@ -65,17 +126,11 @@
       "lastName": "Silva",
       "email": "maria@techpix.example",
       "emailVerified": true,
+      "attributes": { "cargo": ["Engenheira de plantao"] },
       "credentials": [
-        {
-          "type": "password",
-          "value": "techpix123",
-          "temporary": false
-        }
+        { "type": "password", "value": "techpix123", "temporary": false }
       ],
-      "realmRoles": [
-        "techpix-admin",
-        "techpix-user"
-      ]
+      "realmRoles": [ "techpix-admin", "techpix-user" ]
     },
     {
       "username": "joao",
@@ -84,16 +139,62 @@
       "lastName": "Souza",
       "email": "joao@techpix.example",
       "emailVerified": true,
+      "attributes": { "cargo": ["Cliente do app"] },
       "credentials": [
-        {
-          "type": "password",
-          "value": "techpix123",
-          "temporary": false
-        }
+        { "type": "password", "value": "techpix123", "temporary": false }
       ],
-      "realmRoles": [
-        "techpix-user"
-      ]
+      "realmRoles": [ "techpix-user" ]
+    },
+    {
+      "username": "carlos.andrade",
+      "enabled": true,
+      "firstName": "Carlos",
+      "lastName": "Andrade",
+      "email": "carlos.andrade@gmail.example",
+      "emailVerified": true,
+      "attributes": { "cargo": ["Cliente do app (o dono do Pix PIX-928371 da Aula 9)"] },
+      "credentials": [
+        { "type": "password", "value": "techpix123", "temporary": false }
+      ],
+      "realmRoles": [ "techpix-user" ]
+    },
+    {
+      "username": "ana.lima",
+      "enabled": true,
+      "firstName": "Ana",
+      "lastName": "Lima",
+      "email": "ana.lima@techpix.example",
+      "emailVerified": true,
+      "attributes": { "cargo": ["Suporte N2"] },
+      "credentials": [
+        { "type": "password", "value": "techpix123", "temporary": false }
+      ],
+      "realmRoles": [ "techpix-suporte", "techpix-user" ]
+    },
+    {
+      "username": "beatriz.rocha",
+      "enabled": true,
+      "firstName": "Beatriz",
+      "lastName": "Rocha",
+      "email": "beatriz.rocha@techpix.example",
+      "emailVerified": true,
+      "attributes": { "cargo": ["Analista de Compliance"] },
+      "credentials": [
+        { "type": "password", "value": "techpix123", "temporary": false }
+      ],
+      "realmRoles": [ "techpix-compliance", "techpix-user" ]
+    },
+    {
+      "username": "service-account-techpix-monolith",
+      "enabled": true,
+      "serviceAccountClientId": "techpix-monolith",
+      "realmRoles": [ "fraud-evaluate", "payments-write" ]
+    },
+    {
+      "username": "service-account-techpix-fraud-service",
+      "enabled": true,
+      "serviceAccountClientId": "techpix-fraud-service",
+      "realmRoles": [ "payments-read" ]
     }
   ]
 }

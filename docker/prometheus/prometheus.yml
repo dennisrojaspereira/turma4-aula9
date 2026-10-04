@@ -16,3 +16,11 @@ scrape_configs:
       - targets: ["host.docker.internal:8081", "fraud-service:8081", "host.docker.internal:8091"]
         labels:
           app: fraud-service
+  # Aula 9: o simulador do lab "Cade o Pix?" reencena o incidente em loop de 20 min.
+  # Alimenta o dashboard "Aula 9 - Cade o Pix?" no Grafana.
+  - job_name: techpix-lab9
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["host.docker.internal:8080"]
+        labels:
+          app: lab9

@@ -1,7 +1,23 @@
 apiVersion: 1
 providers:
-  - name: techpix
-    folder: Tech Pix
+  # Visao geral no nivel raiz (General) - e tambem a home do Grafana
+  - name: techpix-geral
+    folder: ""
     type: file
     options:
-      path: /var/lib/grafana/dashboards
+      path: /var/lib/grafana/dashboards/geral
+  - name: techpix-aula7
+    folder: "Aula 7 — Do monólito ao distribuído"
+    type: file
+    options:
+      path: /var/lib/grafana/dashboards/aula7
+  - name: techpix-aula9
+    folder: "Aula 9 — Observabilidade"
+    type: file
+    options:
+      path: /var/lib/grafana/dashboards/aula9
+  - name: techpix-servicos
+    folder: "Serviços — RED & Golden Signals"
+    type: file
+    options:
+      path: /var/lib/grafana/dashboards/servicos
