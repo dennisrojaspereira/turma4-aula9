@@ -135,6 +135,14 @@ scripts/simulate-commit.sh vulneravel        # senha hardcoded + DES/MD5 -> gate
 scripts/simulate-commit.sh corrigir          # remove a vulnerabilidade -> volta a passar
 ```
 
+**Synthetic monitoring**: um robô k6 ([load-tests/synthetic-pix.js](load-tests/synthetic-pix.js)) refaz a jornada completa do Pix — abre contas, paga, confere `APPROVED` **e o crédito na conta do recebedor** — de tempos em tempos, e o resultado vira métrica no Prometheus (painel "Synthetic" na Visão Geral do Grafana). É o lado **proativo** da observabilidade: às 3h da manhã, sem tráfego, é ele quem descobre que o Pix quebrou. Sem k6 instalado, a mesma jornada roda em Python puro.
+
+```bash
+python scripts/synthetic-monitor.py run      # testa a operacao AGORA (veredicto no console)
+python scripts/synthetic-monitor.py start    # monitor em background, a cada 2 min
+python scripts/synthetic-monitor.py status   # historico das ultimas execucoes
+```
+
 ### Subir tudo com um comando (sem .sh)
 
 Depois de provisionar uma vez (cluster kind, Gitea, Tekton, JFrog), qualquer reboot se resolve com:

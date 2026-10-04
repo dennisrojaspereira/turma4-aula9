@@ -8,3 +8,5 @@ target/
 .mvn/wrapper/maven-wrapper.jar
 scripts/aula9/.lab9-state.json
 scripts/aula9/.lab9-server.pid
+scripts/aula9/.synthetic-state.json
+scripts/aula9/.synthetic-monitor.pid

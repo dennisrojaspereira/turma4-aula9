@@ -113,6 +113,11 @@ ACTIONS = {
     "lab9-context":    ("Fase 15 - incident-context.json (para a IA)", "cat scripts/aula9/incident-context.json"),
     "lab9-reset":      ("Zerar o lab (volta ao incidente 1)", "bash scripts/lab9-reset.sh"),
     "lab9-stop":       ("Derrubar o ambiente do lab", "bash scripts/lab9-up.sh stop"),
+    # Aula 9 - synthetic monitoring
+    "syn-run":         ("Synthetic: testar a jornada do Pix AGORA", "python scripts/synthetic-monitor.py run"),
+    "syn-start":       ("Synthetic: ligar o monitor (a cada 2 min)", "python scripts/synthetic-monitor.py start"),
+    "syn-status":      ("Synthetic: historico de execucoes", "python scripts/synthetic-monitor.py status"),
+    "syn-stop":        ("Synthetic: desligar o monitor", "python scripts/synthetic-monitor.py stop"),
     # Aula 9 - desafio final (incidente 2)
     "lab9-inc2":       ("Ativar o desafio final (novo chamado)", "bash scripts/lab9-incident2.sh"),
     "lab9-logs2":      ("Logs da transacao PIX-554219", "bash scripts/investigate-logs.sh PIX-554219"),
@@ -143,6 +148,7 @@ SECTIONS = [
                                        "lab9-trace", "lab9-metrics", "lab9-state", "lab9-retry", "lab9-retry-run",
                                        "lab9-retry-idem", "lab9-reconcile", "lab9-dlq", "lab9-dlq-replay",
                                        "lab9-context", "lab9-reset", "lab9-stop"]),
+    ("Aula 9 — synthetic monitoring", ["syn-run", "syn-start", "syn-status", "syn-stop"]),
     ("Aula 9 — desafio final (incidente 2)", ["lab9-inc2", "lab9-logs2", "lab9-corr2", "lab9-trace2",
                                               "lab9-state2", "lab9-reconcile2", "lab9-inc2-off"]),
     ("História", ["steps"]),

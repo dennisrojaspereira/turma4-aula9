@@ -161,6 +161,18 @@ def ensure_lab9():
     print("   %s" % ("no ar" if http_ok("http://localhost:8080/actuator/health") else "falhou (porta ocupada?)"))
 
 
+def ensure_synthetic():
+    step("synthetic monitor (:8098, jornada do Pix a cada 2 min)")
+    if http_ok("http://localhost:8098/metrics"):
+        print("   ja esta no ar")
+        return
+    if not http_ok("http://localhost:8090/actuator/health"):
+        print("   monolito (:8090) fora do ar; synthetic nao iniciado")
+        return
+    run([sys.executable, os.path.join(ROOT, "scripts", "synthetic-monitor.py"), "start"], 30)
+    print("   %s" % ("no ar" if http_ok("http://localhost:8098/metrics") else "nao respondeu"))
+
+
 def ensure_painel():
     step("painel do instrutor (:8099)")
     if http_ok("http://localhost:8099"):
@@ -191,6 +203,7 @@ def summary():
         ("JFrog Artifactory", "http://localhost:8082/artifactory/api/system/ping", "http://localhost:8082"),
         ("Keycloak", "http://localhost:8180/realms/techpix/.well-known/openid-configuration", "http://localhost:8180"),
         ("OPA (policy)", "http://localhost:8181/health", "http://localhost:8181/v1/data/techpix/authz"),
+        ("Synthetic monitor", "http://localhost:8098/metrics", "http://localhost:8098/status"),
         ("Tekton Dashboard", "http://localhost:9097", "http://localhost:9097"),
     ]
     falhas = 0
@@ -217,6 +230,7 @@ def main():
     ensure_kind()
     ensure_portforwards()
     ensure_lab9()
+    ensure_synthetic()
     ensure_painel()
     # os mais lentos (sonar/jfrog/keycloak) terminam de subir durante os passos acima
     summary()

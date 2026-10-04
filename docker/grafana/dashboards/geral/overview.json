@@ -25,6 +25,28 @@
       "options": { "colorMode": "background", "graphMode": "none", "textMode": "value_and_name", "reduceOptions": { "calcs": ["lastNotNull"] } }
     },
     {
+      "id": 7, "type": "stat", "title": "🤖 Synthetic: a jornada do Pix funciona AGORA?",
+      "gridPos": { "h": 7, "w": 8, "x": 0, "y": 18 },
+      "targets": [ { "expr": "techpix_synthetic_success", "legendFormat": "synthetic" } ],
+      "fieldConfig": { "defaults": { "mappings": [ { "type": "value", "options": { "1": { "text": "OK — robô concluiu o Pix", "color": "green" }, "0": { "text": "FALHOU — investigue antes do cliente ligar", "color": "red" } } } ], "noValue": "monitor desligado (scripts/synthetic-monitor.py start)", "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "green", "value": 1 } ] } }, "overrides": [] },
+      "options": { "colorMode": "background", "graphMode": "none", "textMode": "value", "reduceOptions": { "calcs": ["lastNotNull"] } }
+    },
+    {
+      "id": 8, "type": "timeseries", "title": "Synthetic: duração da jornada (SLO ≤ 5s) e falhas",
+      "gridPos": { "h": 7, "w": 8, "x": 8, "y": 18 },
+      "targets": [
+        { "expr": "techpix_synthetic_duration_ms", "legendFormat": "jornada (ms)" },
+        { "expr": "increase(techpix_synthetic_failures_total[15m])", "legendFormat": "falhas (15m)" }
+      ],
+      "fieldConfig": { "defaults": { "custom": { "fillOpacity": 10 }, "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "red", "value": 5000 } ] } }, "overrides": [] },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" } }
+    },
+    {
+      "id": 9, "type": "text", "title": "Monitoramento sintético — o lado proativo",
+      "gridPos": { "h": 7, "w": 8, "x": 16, "y": 18 },
+      "options": { "mode": "markdown", "content": "Dashboards e alertas são **reativos**: dependem de tráfego real sofrendo. O synthetic é **proativo**: um robô (k6) refaz a jornada completa — abre contas, faz o Pix, confere `APPROVED` **e o crédito na conta** — de tempos em tempos.\n\nÀs 3h da manhã, sem clientes, é ele quem descobre que o Pix quebrou.\n\n```\npython scripts/synthetic-monitor.py start   # a cada 2 min\npython scripts/synthetic-monitor.py run     # uma vez, agora\n```\n\nNote o check de negócio: *responder 200 não basta; o dinheiro tem que chegar.*" }
+    },
+    {
       "id": 4, "type": "timeseries", "title": "Pagamentos/s (aula 7 — app real)",
       "gridPos": { "h": 8, "w": 8, "x": 0, "y": 10 },
       "targets": [ { "expr": "sum(rate(payment_create_seconds_count[1m]))", "legendFormat": "pagamentos/s" } ],
