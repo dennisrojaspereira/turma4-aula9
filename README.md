@@ -154,6 +154,31 @@ scripts/lab9-up.sh stop
 
 Roteiro do aluno: [Lab 23 — Cadê o Pix?](docs/labs/23-cade-o-pix.md) · Entregável: [Incident Report](docs/labs/aula09-incident-report-template.md) · Gabarito: [guia do professor](docs/labs/aula09-professor-guide.md) (não distribuir).
 
+### Roteiro de apresentação — Aulas 8 e 9
+
+Antes da aula (10 min, sozinho): `python scripts/sobe-tudo.py` (deve terminar 11/11 UP), abas abertas em painel (8099), Grafana (3000), SonarQube (9000), JFrog (8082), Keycloak (8180) e Tekton (9097), e um `scripts/simulate-commit.sh` de aquecimento para o cache Maven (a pipeline cai de ~5 para ~2 min).
+
+**Aula 8 — Segurança no ciclo de entrega (~45 min)**, tudo pelos botões do grupo "Segurança" do painel:
+
+| # | Momento | Como mostrar |
+|---|---|---|
+| 1 | O fluxo feliz (10 min) | "Imitar commit + pipeline + publicar no JFrog". Enquanto roda, o commit no Gitea e a execução no Tekton Dashboard. Ao final, "Artefatos publicados no JFrog": o jar versionado pelo SHA. *Artefato publicado = artefato que passou pelos gates.* |
+| 2 | O commit de sexta-feira (15 min) | "Imitar commit VULNERÁVEL". Antes, mostre o `LegacyPixExporter.java` injetado: compila, parece inofensivo, tem até um `TODO: mover para o vault`. A pipeline reprova no SAST — percorra as violações no SonarQube (senha hardcoded, DES/ECB, MD5, Random). Pergunta: *quantas dessas um code review humano pegaria às 18h de sexta?* DAST e publish nem rodam: nada vulnerável chega ao repositório de artefatos. |
+| 3 | O conserto (5 min) | "Corrigir a vulnerabilidade + pipeline": gate volta a OK, novo artefato no JFrog. O ciclo commit → gate → publicação, duas vezes, com desfechos opostos. |
+| 4 | Identidade: gente e serviços (15 min) | `scripts/keycloak-m2m-demo.sh`: token de usuário vs token de serviço (compare os claims), introspection autorizando o monolito pela role `fraud-evaluate` e negando o usuário, e a chamada real ao Fraud. *Autenticar ≠ autorizar; serviço também tem identidade.* |
+
+Gancho para a Aula 9: "a pipeline garante o que **entra** em produção. E quando o que está em produção, todo verde, perde um Pix de R$ 250?"
+
+**Aula 9 — Observabilidade (~50 min):**
+
+| # | Momento | Como mostrar |
+|---|---|---|
+| 1 | Teoria com dashboard vivo (10 min) | Nos slides de RED/USE/Golden Signals, deixe projetado Grafana → "Serviços — RED & Golden Signals" com um k6 leve rodando. Opcional: `scripts/chaos.sh latency 800` ao vivo — Duration sobe, Errors não. Cardinalidade: Visão Geral → "por que não existe painel do PIX-928371?". |
+| 2 | Lab "Cadê o Pix?" (30–40 min) | [Lab 23](docs/labs/23-cade-o-pix.md) com o [guia do professor](docs/labs/aula09-professor-guide.md) aberto só para você; espelhe pelos botões "Aula 9" do painel. Na Fase 5, abra o dashboard "Aula 9 — Cadê o Pix?": o incidente reencena em loop de 20 min — cronometrando o início do lab com o ciclo, o deploy v1.13.4 acontece ao vivo. Pausas obrigatórias: a votação do retry (Fase 8) e o "onde estava o Pix?" (Fase 10). |
+| 3 | Desafio final (para casa ou +15 min) | "Ativar o desafio final": novo chamado, sem gabarito. Entregável: o Incident Report do template. |
+
+Fechamento que amarra as duas aulas: a Aula 8 responde *"como impedir que o problema entre?"* (gates antes da produção); a Aula 9 responde *"como explicar o que acontece lá dentro?"* (evidência depois do deploy) — e o vilão do incidente 1 é justamente um deploy que passou nos gates de segurança. **Pipeline não substitui observabilidade.**
+
 Todos os acessos (UIs, portas, credenciais, comandos) em um lugar: abra [hub.html](hub.html) no navegador.
 
 No Windows, cada script em `scripts/` tem um equivalente `.ps1`; os scripts `.sh` também rodam no Git Bash.
