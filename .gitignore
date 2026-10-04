@@ -6,3 +6,5 @@ target/
 .DS_Store
 *.class
 .mvn/wrapper/maven-wrapper.jar
+scripts/aula9/.lab9-state.json
+scripts/aula9/.lab9-server.pid

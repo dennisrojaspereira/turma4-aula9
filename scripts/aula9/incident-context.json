@@ -1,0 +1,68 @@
+{
+  "incident": {
+    "id": "INC-2026-1002-01",
+    "title": "Pix PIX-928371: debito confirmado, credito nao confirmado",
+    "opened_by": "suporte N1",
+    "customer_report": "Cliente informa que realizou um Pix de R$ 250,00. O valor saiu da conta, mas o destinatario nao recebeu.",
+    "transaction_id": "PIX-928371",
+    "correlation_id": "abc123",
+    "trace_id": "4f2a9c01d7e3b8a6",
+    "amount": 250.00,
+    "approx_time": "2026-10-02T21:03"
+  },
+  "timeline": [
+    {"at": "2026-10-02T21:00", "event": "deploy payment-stack v1.13.4 concluido (annotation do CD)"},
+    {"at": "2026-10-02T21:03:01", "event": "POST /payments recebido (PIX-928371), fraude aprovada em 40ms"},
+    {"at": "2026-10-02T21:03:02", "event": "ledger registra DEBIT de 250.00 na conta ACC-1001"},
+    {"at": "2026-10-02T21:03:03", "event": "psp-adapter espera 2874ms por conexao livre (pool_active=2, pool_max=2, pool_pending=14)"},
+    {"at": "2026-10-02T21:03:08", "event": "psp-adapter: ReadTimeout aos 5000ms; payment-service marca a transacao como UNKNOWN"},
+    {"at": "2026-10-02T21:05", "event": "alerta dispara: techpix_payments_unknown_total > 10 por 2 minutos"},
+    {"at": "2026-10-02T21:07", "event": "engenheiro de plantao assume o incidente"}
+  ],
+  "deploy": {
+    "version": "v1.13.4",
+    "finished_at": "2026-10-02T21:00",
+    "diff_relevante": "psp-adapter: variavel PSP_POOL_SIZE passou de 20 para 2 (valor de teste commitado por engano)",
+    "rollout": "100% em um passo, sem canary"
+  },
+  "metrics": {
+    "payments_per_second": {"20:45": 15.8, "21:00": 16.0, "21:05": 16.2, "21:15": 16.0, "comment": "Rate estavel"},
+    "http_5xx_percent": {"20:45": 0.1, "21:05": 0.4, "21:15": 0.4, "comment": "Errors continuam baixos"},
+    "psp_transfer_p95_ms": {"20:45": 180, "21:00": 210, "21:05": 4900, "21:15": 4950, "comment": "Duration explode apos 21:00"},
+    "psp_pool_pending": {"20:55": 0, "21:00": 2, "21:05": 14, "21:15": 16, "comment": "fila de espera por conexao (saturacao)"},
+    "unknown_transactions_total": {"21:00": 0, "21:05": 11, "21:10": 23, "21:15": 25},
+    "cpu_payment_service": "estavel em ~31%",
+    "cpu_psp_adapter": "estavel em ~18%",
+    "kafka_consumer_lag": 0,
+    "postgres": "normal (14/50 conexoes)"
+  },
+  "trace_summary": {
+    "trace_id": "4f2a9c01d7e3b8a6",
+    "total_ms": 5212,
+    "spans": [
+      {"name": "fraud.check", "service": "fraud-service", "ms": 40, "status": "OK"},
+      {"name": "ledger.debit", "service": "ledger", "ms": 21, "status": "OK"},
+      {"name": "psp.transfer", "service": "psp-adapter", "ms": 5003, "status": "TIMEOUT",
+       "children": [
+         {"name": "pool.acquire", "ms": 2874, "note": "esperando conexao livre no pool"},
+         {"name": "http.post /transfers", "ms": 2101, "note": "sem resposta; cancelado aos 5000ms"}
+       ]}
+    ]
+  },
+  "log_excerpts": [
+    {"ts": "2026-10-02T21:03:03.012", "service": "psp-adapter", "level": "WARN", "message": "pool de conexoes esgotado, requisicao aguardando", "pool_active": 2, "pool_max": 2, "pool_pending": 14, "wait_ms": 2874},
+    {"ts": "2026-10-02T21:03:08.021", "service": "psp-adapter", "level": "ERROR", "message": "timeout aguardando resposta do PSP", "timeout_ms": 5000, "error": "ReadTimeout"},
+    {"ts": "2026-10-02T21:03:08.034", "service": "payment-service", "level": "WARN", "message": "sem confirmacao do PSP; estado indeterminado", "status": "UNKNOWN", "reason": "psp-timeout"}
+  ],
+  "current_state": {
+    "techpix_payment_service": "UNKNOWN",
+    "ledger": "DEBITED",
+    "psp": "nao consultado ainda",
+    "unknown_count_now": 25
+  },
+  "constraints_for_ai": [
+    "Nao altere o estado de nenhuma transacao.",
+    "Nao confunda correlacao temporal com causalidade.",
+    "Toda hipotese precisa citar a evidencia que a sustenta."
+  ]
+}

@@ -113,6 +113,20 @@ SPRING_PROFILES_ACTIVE=secure ./mvnw -pl monolith spring-boot:run
 
 Sem o profile `secure`, nada muda: os labs anteriores e os testes continuam funcionando sem Keycloak.
 
+### Aula 9 — Observabilidade e Resiliência (laboratório final "Cadê o Pix?")
+
+Investigação de incidente: o sistema está "todo verde", mas um Pix de R$ 250,00 saiu da conta e não chegou ao destinatário. O aluno segue logs estruturados, correlation ID, trace, métricas (RED/USE/Golden Signals), estado UNKNOWN, retry vs idempotência, reconciliação, DLQ, SLI/SLO, MTTD/MTTR, RCA e IA — tudo dentro do mesmo incidente. Roda sem cluster, sem Kafka e sem o monólito (simulador autocontido em Python):
+
+```bash
+scripts/lab9-up.sh                           # "produção" do lab em :8080
+curl localhost:8080/actuator/health          # está tudo verde... será?
+scripts/investigate-logs.sh PIX-928371       # a investigação começa aqui
+scripts/lab9-incident2.sh                    # desafio final (sem gabarito)
+scripts/lab9-up.sh stop
+```
+
+Roteiro do aluno: [Lab 23 — Cadê o Pix?](docs/labs/23-cade-o-pix.md) · Entregável: [Incident Report](docs/labs/aula09-incident-report-template.md) · Gabarito: [guia do professor](docs/labs/aula09-professor-guide.md) (não distribuir).
+
 Todos os acessos (UIs, portas, credenciais, comandos) em um lugar: abra [hub.html](hub.html) no navegador.
 
 No Windows, cada script em `scripts/` tem um equivalente `.ps1`; os scripts `.sh` também rodam no Git Bash.
@@ -145,6 +159,7 @@ Cada lab segue a mesma estrutura: problema, o que observar, hipóteses, mudança
 | [20 — Complexidade dos sistemas distribuídos](docs/labs/20-distributed-systems.md) | 26 | `aula07-step-14-distributed-problems` |
 | [21 — Pipeline de segurança: Tekton, SAST e DAST](docs/labs/21-secure-pipeline.md) | Aula 8 | — |
 | [22 — Autenticação com Keycloak e tela de login](docs/labs/22-keycloak-login.md) | Aula 8 | — |
+| [23 — Cadê o Pix? Observabilidade e resiliência](docs/labs/23-cade-o-pix.md) | Aula 9 | — |
 
 O [mapa dos 26 slides](docs/architecture/slides-map.md) diz o que demonstrar ao vivo em cada um e propõe um roteiro de 2 horas. A [evolução dos diagramas](docs/architecture/evolution.md) mostra a arquitetura mudando, lab a lab.
 
