@@ -5,9 +5,12 @@ Gabarito e roteiro de condução do [Lab 23](23-cade-o-pix.md). **Não distribui
 ## Antes da aula (5 min de preparo)
 
 ```bash
-scripts/lab9-up.sh        # sobe o simulador na porta 8080 e zera o estado
-scripts/lab9-up.sh stop   # ao final
+python scripts/sobe-tudo.py   # ambiente completo: simulador, dashboards, prometheus, synthetic, painel
+scripts/lab9-up.sh            # ou so o simulador na porta 8080 (zera o estado)
+scripts/lab9-up.sh stop       # ao final
 ```
+
+Abas para projetar: [painel](http://localhost:8099) · [dashboard do incidente](http://localhost:3000/d/aula9) · [Visão Geral](http://localhost:3000/d/techpix-home) · [health](http://localhost:8080/actuator/health). O dashboard reencena o incidente em **loop de 20 min** (deploy na metade do ciclo) — se quiser o "deploy ao vivo" durante a Fase 5, cronometre o `lab9-up` ~10 min antes de chegar lá.
 
 - O lab **não depende** do cluster kind, do Kafka nem do monólito. O simulador (`scripts/aula9/lab9.py`, Python puro, sem dependências) faz o papel do payment-service e serve todas as evidências. Se o stack da Aula 7/8 estiver rodando na 8080, derrube-o ou use `TECHPIX_LAB9_PORT=8086`.
 - Ensaie a sequência completa uma vez: `lab9-up` → fases 1–11 → `lab9-incident2` → `lab9-reset`. Leva ~5 min sozinho.
@@ -177,7 +180,7 @@ Transição:
 
 ## Fase 5 — Métricas (RED / USE / Golden Signals)
 
-**Evidência esperada:** `scripts/investigate-metrics.sh` → p95 do PSP salta de ~200 ms para ~4900 ms às 21:05; `pool_pending` 0 → 14–16; `unknown_total` 0 → 25; **rate estável, 5xx baixo, CPU normal, Kafka lag 0**; annotation `deploy v1.13.4` às **21:00**.
+**Evidência esperada:** `scripts/investigate-metrics.sh` → p95 do PSP salta de ~200 ms para ~4900 ms às 21:05; `pool_pending` 0 → 14–16; `unknown_total` 0 → 25; **rate estável, 5xx baixo, CPU normal, Kafka lag 0**; annotation `deploy v1.13.4` às **21:00**. Projete também o [dashboard ao vivo](http://localhost:3000/d/aula9): os 4 Golden Signals na primeira linha e o stat "Deploy no ar" contam a mesma história em curvas.
 
 **Onde pausar:** na linha das 21:00.
 
@@ -574,6 +577,32 @@ Impacto:             Pix lentos (~4s, dentro do timeout: quase nada vira
 | Sem Python na máquina | qualquer Python 3 serve (`py -3` no Windows); o lab não tem dependências |
 | Scripts de evidência | nunca precisam do servidor: `python scripts/aula9/lab9.py <logs|correlation|trace|metrics|dlq> ...` |
 | Sem IA na sala (fase 15) | projete o `incident-context.json` e conduza a análise coletivamente |
+
+## Epílogo — synthetic monitoring (gabarito)
+
+Demo: `python scripts/synthetic-monitor.py start` com a [Visão Geral](http://localhost:3000/d/techpix-home) projetada; depois `scripts/chaos.sh errors 0.9` → em até 2 min o stat vira **FALHOU** (o k6 exige `APPROVED`, e o fail-closed do fraud rejeita) — *sem nenhum chamado aberto*. `scripts/chaos.sh off` normaliza no ciclo seguinte.
+
+```text
+Pergunta para a turma:
+  O que o synthetic verifica que o health check da Fase 1 nao verifica?
+
+Resposta esperada:
+  O health check pergunta "o processo esta vivo?"; o synthetic executa a
+  JORNADA DE NEGOCIO inteira e exige o resultado certo: APPROVED e o credito
+  na conta do recebedor. Responder 200 nao basta; o dinheiro tem que chegar.
+  E ele e PROATIVO: descobre as 3h da manha, sem trafego real sofrendo.
+
+Erro comum:
+  Confundir synthetic com teste de carga (e 1 VU, 1 iteracao) ou achar que
+  substitui alertas sobre trafego real - sao complementares.
+
+Conceito:
+  Monitoramento sintetico; SLI de jornada; proativo vs reativo.
+
+Transicao:
+  Fecha o circulo com a Fase 1: comecamos com "esta tudo verde" enganando;
+  terminamos com um robo que nao se deixa enganar.
+```
 
 ## Fechamento da aula
 

@@ -145,3 +145,16 @@ sem pedir senha, porque a aplicacao NAO TEM autenticacao. Nenhum scanner consert
 ## Próximo problema
 
 A pipeline encontra vulnerabilidades, mas a maior delas não é um header: qualquer pessoa chama qualquer endpoint da Tech Pix, inclusive os administrativos. Precisamos de identidade — quem é você, o que você pode fazer. [Lab 22](22-keycloak-login.md).
+
+## Extensões (demos prontas no painel)
+
+A pipeline ganhou um 4º estágio e um ciclo de demonstração completo — tudo clicável no [painel](http://localhost:8099), grupo "Segurança":
+
+| Demo | Comando / Link |
+|---|---|
+| Commit simulado → SAST → DAST → **publish no JFrog** | `scripts/simulate-commit.sh` · artefatos em <http://localhost:8082> (admin/password) |
+| Commit **vulnerável** (senha hardcoded, DES/ECB, MD5) → gate reprova | `scripts/simulate-commit.sh vulneravel` · violações em <http://localhost:9000/dashboard?id=tech-pix> |
+| Correção → gate volta a passar | `scripts/simulate-commit.sh corrigir` |
+| Execuções da pipeline | <http://localhost:9097> (Tekton Dashboard) |
+
+Só artefato aprovado pelos dois gates chega ao Artifactory ([tekton/tasks/publish-artifactory.yaml](../../tekton/tasks/publish-artifactory.yaml)) — e os commits simulados acontecem num clone temporário do Gitea, sem tocar no seu repositório.

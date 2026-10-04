@@ -15,9 +15,19 @@ Não leia o [guia do professor](aula09-professor-guide.md). Ele entrega as respo
 
 ```bash
 scripts/lab9-up.sh          # Windows: scripts/lab9-up.ps1
+# ou, para o ambiente inteiro (dashboards, prometheus, synthetic): python scripts/sobe-tudo.py
 ```
 
 Isso sobe o "ambiente de produção" do lab na porta 8080 e reinicia o estado do incidente. Não precisa do cluster, do Kafka nem do monólito rodando — se o stack da Aula 7/8 estiver no ar, derrube-o antes (`docker compose --profile app down`) ou use `TECHPIX_LAB9_PORT=8086`.
+
+**Deixe estas abas abertas** (você vai clicar nelas durante a investigação):
+
+| Aba | Link |
+|---|---|
+| Painel do instrutor (botões de cada fase) | <http://localhost:8099> |
+| Dashboard do incidente — "Aula 9 — Cadê o Pix?" | <http://localhost:3000/d/aula9> |
+| Visão Geral (todos os dashboards + synthetic) | <http://localhost:3000/d/techpix-home> |
+| Health do sistema | <http://localhost:8080/actuator/health> |
 
 No Windows, todos os comandos `scripts/*.sh` abaixo têm um equivalente `.ps1` (ou rodam no Git Bash).
 
@@ -54,6 +64,8 @@ Abra o [template do Incident Report](aula09-incident-report-template.md) agora e
 ```bash
 curl localhost:8080/actuator/health
 ```
+
+(ou clique: <http://localhost:8080/actuator/health> — e olhe também os targets verdes em <http://localhost:9090/targets>)
 
 Painel da operação neste momento:
 
@@ -151,6 +163,8 @@ scripts/investigate-trace.sh PIX-928371
 scripts/investigate-metrics.sh
 ```
 
+E ao vivo, no Grafana: **<http://localhost:3000/d/aula9>** — o incidente é reencenado em loop de 20 min; os 4 Golden Signals estão na primeira linha, e o painel "Deploy no ar" avisa quando o v1.13.4 entra.
+
 **Perguntas.**
 
 - Qual métrica realmente indica **impacto de negócio**? CPU detectaria este incidente?
@@ -187,6 +201,8 @@ Logs e traces (por evento, alta cardinalidade): transaction_id, correlation_id, 
 
 **Registre no report:** nada — mas use a regra na seção Evidências: métricas para tendência, logs/traces para o caso individual.
 
+Repare que o [dashboard](http://localhost:3000/d/aula9) tem a tabela **"Do dashboard ao trace"**: os IDs do Pix investigado como *info-metric* de 2 exemplares fixos — o papel dos *exemplars* do OpenTelemetry, não uma label por transação.
+
 **Próximo passo.** Você já sabe **o que** degradou e **quando**. Falta a pergunta do cliente: em que estado está o Pix dele?
 
 ---
@@ -198,6 +214,8 @@ Logs e traces (por evento, alta cardinalidade): transaction_id, correlation_id, 
 ```bash
 curl localhost:8080/payments/PIX-928371
 ```
+
+(ou clique: <http://localhost:8080/payments/PIX-928371>)
 
 ```json
 { "status": "UNKNOWN" }
@@ -336,7 +354,7 @@ scripts/dlq-show.sh replay
 **Desafio.** Com a turma:
 
 1. Escreva o **SLI**: `% de Pix concluídos em <= 5s`.
-2. O **SLO** é `99,9%`. Calcule o valor do SLI no período. **Estamos dentro do SLO?**
+2. O **SLO** é `99,9%`. Calcule o valor do SLI no período. **Estamos dentro do SLO?** (confira depois no gauge "SLI" do [dashboard](http://localhost:3000/d/aula9))
 3. Agora considere um segundo SLI: `% de Pix em UNKNOWN por mais de 5 min`.
 
 **Pergunta.**
@@ -462,7 +480,37 @@ Entregue um [Incident Report](aula09-incident-report-template.md) completo, com:
 4. evidências
 ```
 
+O [dashboard](http://localhost:3000/d/aula9) também muda de história: com o incidente 2 ativo, as mesmas séries passam a contar o novo caso (olhe o CPU do fraud-service, o Kafka lag e o backlog de reconciliação).
+
 Para voltar ao primeiro incidente: `scripts/lab9-incident2.sh off`. Para zerar tudo: `scripts/lab9-reset.sh`.
+
+---
+
+## Epílogo — o plantão que não dorme (synthetic monitoring)
+
+Tudo que você fez até aqui foi **reativo**: o cliente reclamou, você investigou. E às 3h da manhã, sem clientes acordados?
+
+Ligue o robô que refaz a jornada do Pix de tempos em tempos (contra o monólito real da Aula 7, em <http://localhost:8090>):
+
+```bash
+python scripts/synthetic-monitor.py start     # a cada 2 min
+python scripts/synthetic-monitor.py run       # ou uma vez, agora
+```
+
+Acompanhe no painel **"Synthetic: a jornada do Pix funciona AGORA?"** da [Visão Geral](http://localhost:3000/d/techpix-home). Para ver o robô descobrir um problema antes de qualquer cliente:
+
+```bash
+scripts/chaos.sh errors 0.9      # 90% das avaliações de fraude falham
+# aguarde até 2 min -> o stat fica VERMELHO sem nenhum chamado aberto
+scripts/chaos.sh off
+```
+
+**Perguntas.**
+
+- O que o synthetic verifica que o health check da Fase 1 não verifica?
+- Por que o check é "o dinheiro chegou na conta" e não "a API respondeu 200"?
+
+---
 
 ---
 

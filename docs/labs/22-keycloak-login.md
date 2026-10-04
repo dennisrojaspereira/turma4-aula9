@@ -144,3 +144,14 @@ tambem precisa de identidade, assinatura e verificacao — e disso que trata o l
 ## Próximo problema
 
 A aplicação agora sabe **quem** chama. Mas quem garante o **artefato** que está rodando? A pipeline segura do [Lab 21](21-secure-pipeline.md) ganha, com este lab, uma aplicação com autenticação de verdade para construir, escanear e assinar.
+
+## Extensões (demos prontas no painel)
+
+O realm cresceu: usuários realistas (maria/admin, ana.lima/suporte, beatriz.rocha/compliance, carlos.andrade e joao/clientes — senha `techpix123`) e os dois serviços como clients com service account. Duas demos fecham o tema "identidade e autorização":
+
+| Demo | Comando / Link |
+|---|---|
+| **Serviço falando com serviço**: client_credentials do monolito → introspection no Fraud → autorizado pela role `fraud-evaluate`; token de usuário → negado | `scripts/keycloak-m2m-demo.sh` · realm em <http://localhost:8180> (admin/admin) |
+| **Policy as code (OPA)**: limites de Pix por papel, valor alto exige compliance, decisão com motivos — usando as roles dos tokens reais | `scripts/opa-demo.sh` · política: [docker/opa/policies/techpix.rego](../../docker/opa/policies/techpix.rego) · decisões em <http://localhost:8181/v1/data/techpix/authz> |
+
+Keycloak responde **quem é você** (autenticação); OPA responde **o que você pode** (autorização como código, editável sem redeploy).
