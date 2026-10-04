@@ -162,6 +162,7 @@ LINKS = [
     ("SonarQube", "http://localhost:9000/dashboard?id=tech-pix"),
     ("Keycloak", "http://localhost:8180"),
     ("JFrog", "http://localhost:8082"),
+    ("OPA", "http://localhost:8181/v1/data/techpix/authz"),
     ("Lab Aula 9", "http://localhost:8080/actuator/health"),
 ]
 

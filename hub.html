@@ -94,6 +94,18 @@
     <div class="desc">Realm techpix: clients, roles e usuários da aplicação.</div>
     <div class="cred">admin / <code>admin</code></div>
   </a>
+  <a class="card" href="http://localhost:8181/v1/data/techpix/authz" target="_blank" data-check="http://localhost:8181/health">
+    <div class="top"><span class="dot"></span><b>OPA</b></div>
+    <div class="url">localhost:8181</div>
+    <div class="desc">Policy as code: decisões de autorização da Tech Pix (techpix.rego). Demo: <code>scripts/opa-demo.sh</code></div>
+    <div class="cred">sem senha</div>
+  </a>
+  <a class="card" href="http://localhost:8082" target="_blank" data-check="http://localhost:8082/artifactory/api/system/ping">
+    <div class="top"><span class="dot"></span><b>JFrog Artifactory</b></div>
+    <div class="url">localhost:8082</div>
+    <div class="desc">Artefatos aprovados pela pipeline (example-repo-local/tech-pix, versionados por commit).</div>
+    <div class="cred">admin / <code>password</code></div>
+  </a>
 </div>
 <p class="note">O relatório do <b>ZAP (DAST)</b> não tem UI própria: sai nos logs da task <code>dast</code> — no Tekton Dashboard ou no botão "Rodar pipeline" do painel.</p>
 
@@ -139,6 +151,7 @@
     <tr><td>Git local (Gitea)</td><td><code>scripts/local-git-server.sh</code></td></tr>
     <tr><td>Pipeline (Tekton + SonarQube + Dashboard)</td><td><code>scripts/tekton-up.sh</code> &nbsp;·&nbsp; rodar: <code>scripts/pipeline-run.sh</code></td></tr>
     <tr><td>Keycloak (realm techpix)</td><td><code>scripts/keycloak-up.sh</code></td></tr>
+    <tr><td>OPA + JFrog (políticas e artefatos)</td><td><code>docker compose --profile auth up -d opa</code> &nbsp;·&nbsp; <code>scripts/jfrog-up.sh</code></td></tr>
     <tr><td>App com login</td><td><code>SPRING_PROFILES_ACTIVE=secure ./mvnw -pl monolith spring-boot:run</code></td></tr>
     <tr><td>Argo CD</td><td><code>TECHPIX_GIT_URL=http://host.docker.internal:3001/techpix/tech-pix.git scripts/argocd-up.sh</code></td></tr>
     <tr><td>Prometheus + Grafana</td><td><code>docker compose --profile observability up -d</code></td></tr>
