@@ -141,6 +141,19 @@ services:
     # Profile proprio para nao pesar o --profile app dos labs antigos.
     profiles: ["auth"]
 
+  opa:
+    # Aula 8: policy as code. Servidor de decisao com as politicas da Tech Pix;
+    # os servicos perguntam "posso?" via POST /v1/data/techpix/authz.
+    # --watch: editar docker/opa/policies/techpix.rego recarrega ao vivo.
+    image: openpolicyagent/opa:latest
+    container_name: techpix-opa
+    command: ["run", "--server", "--watch", "--addr", ":8181", "/policies"]
+    volumes:
+      - ./docker/opa/policies:/policies:ro
+    ports:
+      - "8181:8181"
+    profiles: ["auth"]
+
   prometheus:
     image: prom/prometheus:v2.55.1
     container_name: techpix-prometheus

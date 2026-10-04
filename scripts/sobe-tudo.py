@@ -85,16 +85,16 @@ def ensure_compose():
     # containers antigos podem pertencer a outro nome de projeto compose
     # (a pasta ja se chamou aula7/aula8); docker start neles evita conflito de nome.
     legacy = [c for c in ("techpix-postgres", "techpix-kafka", "techpix-prometheus",
-                          "techpix-grafana", "techpix-keycloak")
+                          "techpix-grafana", "techpix-keycloak", "techpix-opa")
               if container_exists(c) and not container_running(c)]
     if legacy:
         run(["docker", "start"] + legacy, 120)
     rc, out = run(["docker", "compose", "--profile", "observability", "--profile", "auth",
-                   "up", "-d", "postgres", "kafka", "prometheus", "grafana", "keycloak"], 300)
+                   "up", "-d", "postgres", "kafka", "prometheus", "grafana", "keycloak", "opa"], 300)
     if rc != 0 and "already in use" not in out:
         print("   AVISO compose: " + out.strip().splitlines()[-1][:160])
     for c in ("techpix-postgres", "techpix-kafka", "techpix-prometheus",
-              "techpix-grafana", "techpix-keycloak"):
+              "techpix-grafana", "techpix-keycloak", "techpix-opa"):
         print("   %-20s %s" % (c, "UP" if container_running(c) else "parado"))
 
 
@@ -190,6 +190,7 @@ def summary():
         ("SonarQube", "http://localhost:9000/api/system/status", "http://localhost:9000"),
         ("JFrog Artifactory", "http://localhost:8082/artifactory/api/system/ping", "http://localhost:8082"),
         ("Keycloak", "http://localhost:8180/realms/techpix/.well-known/openid-configuration", "http://localhost:8180"),
+        ("OPA (policy)", "http://localhost:8181/health", "http://localhost:8181/v1/data/techpix/authz"),
         ("Tekton Dashboard", "http://localhost:9097", "http://localhost:9097"),
     ]
     falhas = 0

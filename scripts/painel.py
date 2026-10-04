@@ -92,6 +92,8 @@ ACTIONS = {
     "sec-sim-commit":  ("Imitar commit + pipeline + publicar no JFrog", "bash scripts/simulate-commit.sh"),
     "sec-sim-vuln":    ("Imitar commit VULNERAVEL (gate deve reprovar)", "bash scripts/simulate-commit.sh vulneravel"),
     "sec-sim-fix":     ("Corrigir a vulnerabilidade + pipeline", "bash scripts/simulate-commit.sh corrigir"),
+    "sec-opa-demo":    ("OPA: 7 decisoes de politica (tokens reais)", "bash scripts/opa-demo.sh"),
+    "sec-opa-policy":  ("OPA: ver a politica (techpix.rego)", "cat docker/opa/policies/techpix.rego"),
     "sec-jfrog-list":  ("Artefatos publicados no JFrog", "curl -s -u admin:password -X POST http://localhost:8082/artifactory/api/search/aql -H 'Content-Type: text/plain' -d 'items.find({\\\"repo\\\":\\\"example-repo-local\\\"}).include(\\\"path\\\",\\\"name\\\",\\\"size\\\").sort({\\\"$desc\\\":[\\\"created\\\"]})' | python -c \"import json,sys; r=json.load(sys.stdin).get('results',[]); print('repositorio vazio' if not r else '\\n'.join('%-70s %10.1f KB' % (i['path']+'/'+i['name'], i['size']/1024) for i in r))\""),
     # Aula 9 - lab 23 "Cade o Pix?" (incidente 1, fases 1-15)
     "lab9-up":         ("Subir o ambiente do lab (:8080, zera o estado)", "bash scripts/lab9-up.sh"),
@@ -136,7 +138,7 @@ SECTIONS = [
     ("GitOps / Argo CD", ["argocd-apps", "drift", "argocd-forward", "argocd-pass", "gitea-push"]),
     ("Segurança — labs 21/22 (Aula 8)", ["sec-tekton-up", "sec-pipeline", "sec-runs", "sec-dashboard", "sec-keycloak",
                                          "sec-jfrog-up", "sec-sim-commit", "sec-sim-vuln", "sec-sim-fix",
-                                         "sec-jfrog-list"]),
+                                         "sec-jfrog-list", "sec-opa-demo", "sec-opa-policy"]),
     ("Aula 9 — Cadê o Pix? (lab 23)", ["lab9-up", "lab9-status", "lab9-health", "lab9-logs", "lab9-corr",
                                        "lab9-trace", "lab9-metrics", "lab9-state", "lab9-retry", "lab9-retry-run",
                                        "lab9-retry-idem", "lab9-reconcile", "lab9-dlq", "lab9-dlq-replay",

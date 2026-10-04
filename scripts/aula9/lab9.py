@@ -537,10 +537,19 @@ def _ramp(phase, start, baseline, peak):
 def render_metrics(state):
     phase = (time.time() % LOOP_SECONDS) / LOOP_SECONDS  # 0.0 -> 1.0; deploy em 0.5
     deploy = 1 if phase >= 0.5 else 0
+    # info-metric com POUCOS exemplares (as transacoes do incidente), no estilo
+    # dos exemplars do OpenTelemetry: a ponte metrica -> trace. Nao confundir com
+    # label por transacao (cardinalidade!): aqui sao 2 series fixas, didaticas.
+    tx = "PIX-554219" if state["incident"] == 2 else "PIX-928371"
+    pay = state["payments"][tx]
     lines = [
         "# HELP techpix_lab9_info Incidente ativo do laboratorio Aula 9",
         "# TYPE techpix_lab9_info gauge",
         'techpix_lab9_info{incident="%d"} 1' % state["incident"],
+        "# HELP techpix_incident_trace_info Exemplar do incidente: a ponte metrica -> logs -> trace",
+        "# TYPE techpix_incident_trace_info gauge",
+        'techpix_incident_trace_info{transaction_id="%s",correlation_id="%s",trace_id="%s",status="%s"} 1'
+        % (tx, pay["correlation_id"], pay["trace_id"], pay["status"]),
         "# TYPE techpix_payments_per_second gauge",
         "techpix_payments_per_second %.1f" % (15.8 + 0.4 * phase),
         "# TYPE techpix_http_5xx_percent gauge",

@@ -119,6 +119,13 @@ O realm agora traz usuários realistas (maria/admin, ana.lima/suporte, beatriz.r
 scripts/keycloak-m2m-demo.sh
 ```
 
+**Policy as code com OPA**: um servidor de decisão ([docker/opa/policies/techpix.rego](docker/opa/policies/techpix.rego)) responde "posso?" para os serviços — limites de Pix por papel, Pix alto exige aprovação de compliance, chamada serviço-a-serviço exige role de serviço. A demo usa as roles de tokens reais do Keycloak como input (identidade diz *quem* você é; política diz *o que* pode), e a política pode ser editada ao vivo, sem redeploy:
+
+```bash
+docker compose --profile auth up -d opa        # OPA em :8181
+scripts/opa-demo.sh                            # 7 decisoes: ALLOW/DENY com motivos
+```
+
 A pipeline também publica os artefatos aprovados num **JFrog Artifactory** local, e dá para encenar o ciclo completo de CI (commit → gates → publicação) sem tocar no seu repositório — os commits simulados acontecem num clone temporário do Gitea:
 
 ```bash
@@ -165,7 +172,8 @@ Antes da aula (10 min, sozinho): `python scripts/sobe-tudo.py` (deve terminar 11
 | 1 | O fluxo feliz (10 min) | "Imitar commit + pipeline + publicar no JFrog". Enquanto roda, o commit no Gitea e a execução no Tekton Dashboard. Ao final, "Artefatos publicados no JFrog": o jar versionado pelo SHA. *Artefato publicado = artefato que passou pelos gates.* |
 | 2 | O commit de sexta-feira (15 min) | "Imitar commit VULNERÁVEL". Antes, mostre o `LegacyPixExporter.java` injetado: compila, parece inofensivo, tem até um `TODO: mover para o vault`. A pipeline reprova no SAST — percorra as violações no SonarQube (senha hardcoded, DES/ECB, MD5, Random). Pergunta: *quantas dessas um code review humano pegaria às 18h de sexta?* DAST e publish nem rodam: nada vulnerável chega ao repositório de artefatos. |
 | 3 | O conserto (5 min) | "Corrigir a vulnerabilidade + pipeline": gate volta a OK, novo artefato no JFrog. O ciclo commit → gate → publicação, duas vezes, com desfechos opostos. |
-| 4 | Identidade: gente e serviços (15 min) | `scripts/keycloak-m2m-demo.sh`: token de usuário vs token de serviço (compare os claims), introspection autorizando o monolito pela role `fraud-evaluate` e negando o usuário, e a chamada real ao Fraud. *Autenticar ≠ autorizar; serviço também tem identidade.* |
+| 4 | Identidade: gente e serviços (10 min) | `scripts/keycloak-m2m-demo.sh`: token de usuário vs token de serviço (compare os claims), introspection autorizando o monolito pela role `fraud-evaluate` e negando o usuário, e a chamada real ao Fraud. *Autenticar ≠ autorizar; serviço também tem identidade.* |
+| 5 | Política como código (10 min) | Botão "OPA: 7 decisões de política": limites por papel, Pix de R$ 25.000 negado sem compliance e aprovado com, serviço vs usuário no `fraud.evaluate` — tudo com roles de tokens reais. Edite o limite no `techpix.rego`, `docker restart techpix-opa`, rode de novo: **a regra mudou sem redeploy**. |
 
 Gancho para a Aula 9: "a pipeline garante o que **entra** em produção. E quando o que está em produção, todo verde, perde um Pix de R$ 250?"
 

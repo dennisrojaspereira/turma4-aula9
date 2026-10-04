@@ -97,13 +97,28 @@
       "options": { "mode": "markdown", "content": "`pix_status{transaction_id=\"PIX-928371\"}` ❌\n\nCada valor de label = **uma série temporal nova**. A 16 Pix/s ≈ **1,4 milhão de séries/dia** → o Prometheus morre.\n\n**Métricas**: `status`, `provider`, `operation` (baixa cardinalidade)\n**Logs/Traces**: `transaction_id`, `correlation_id`, `trace_id` (alta cardinalidade)\n\n➡️ A pergunta \"cadê ESTE Pix?\" se responde com `scripts/investigate-logs.sh` e trace — não aqui." }
     },
     {
+      "id": 16, "type": "table", "title": "🧵 Do dashboard ao trace: os IDs do Pix investigado",
+      "gridPos": { "h": 7, "w": 10, "x": 0, "y": 28 },
+      "targets": [ { "expr": "techpix_incident_trace_info", "format": "table", "instant": true } ],
+      "transformations": [
+        { "id": "organize", "options": { "excludeByName": { "Time": true, "Value": true, "__name__": true, "instance": true, "job": true, "app": true, "incident": true }, "renameByName": { "transaction_id": "Transaction ID (negócio)", "correlation_id": "Correlation ID (jornada)", "trace_id": "Trace ID (spans)", "status": "Status" } } }
+      ],
+      "fieldConfig": { "defaults": {}, "overrides": [] },
+      "options": { "showHeader": true }
+    },
+    {
+      "id": 17, "type": "text", "title": "Como chegar ao trace a partir daqui",
+      "gridPos": { "h": 7, "w": 14, "x": 10, "y": 28 },
+      "options": { "mode": "markdown", "content": "O dashboard mostra o **agregado** (quantos, desde quando). Para UM Pix, pegue o ID na tabela ao lado e desça de nível:\n\n```\nscripts/investigate-logs.sh  PIX-928371    # logs → revela correlation_id e trace_id\nscripts/find-correlation.sh  abc123        # a jornada entre serviços, em ordem\nscripts/investigate-trace.sh PIX-928371    # o trace: spans, durações, onde doeu\n```\n\nEssa tabela é um *info-metric* com **2 exemplares fixos** — o mesmo papel dos **exemplars** do OpenTelemetry (pontinhos nos gráficos de latência que linkam direto ao trace no Tempo/Jaeger). Não é label por transação: 1,4 milhão de séries/dia derrubaria o Prometheus." }
+    },
+    {
       "id": 14, "type": "text", "title": "A solução do caso — UNKNOWN → retry → idempotência → reconciliação → DLQ",
-      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 28 },
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 35 },
       "options": { "mode": "markdown", "content": "1. **UNKNOWN ≠ FAILED**: o PSP deu timeout *depois* de processar. O sistema admite: \"não tenho evidência\". Débito feito, confirmação perdida.\n2. **Retry cego?** O PSP processaria DE NOVO → `DUPLICATE TRANSFER` (R$ 500 em vez de R$ 250). *Retry de operação financeira ≠ retry de leitura HTTP.*\n3. **Idempotency-Key** torna a repetição segura — mas não revela o resultado real.\n4. **Reconciliação** pergunta às fontes da verdade: Ledger = `DEBITED`, PSP = `COMPLETED` (e2e_id) → `UNKNOWN → APPROVED`. **O dinheiro nunca esteve perdido; o sistema perdeu a *certeza*.**\n5. O evento de correção quebra um consumer → 3 retries → **DLQ**. DLQ preserva, não resolve: corrigir a causa, depois *replay* (seguro só porque o consumer é idempotente)." }
     },
     {
       "id": 15, "type": "text", "title": "RCA — sintoma ≠ impacto ≠ causa  ·  e o papel da IA",
-      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 28 },
+      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 35 },
       "options": { "mode": "markdown", "content": "| Nível | Incidente 1 |\n|---|---|\n| Sintoma | timeout no PSP (p95 5s) |\n| Impacto | 25 Pix em UNKNOWN; SLO estourado (99,75% < 99,9%) |\n| Causa intermediária | psp-adapter **saturado** (pool com fila) |\n| Causa raiz | deploy v1.13.4: `PSP_POOL_SIZE` 20 → **2** |\n\n\"Deploy às 21:00 e latência às 21:00\" é **correlação**. Vira causalidade com: mecanismo observado (span `pool.acquire` 2,9s) + diff da config + rollback que normaliza.\n\n🤖 **AI proposes hypotheses. Evidence decides.** A IA reconstrói timeline e ranqueia hipóteses; quem muda estado de dinheiro é humano com evidência de reconciliação.\n\n> **Observabilidade é conseguir explicar onde está o dinheiro.**" }
     }
   ]
