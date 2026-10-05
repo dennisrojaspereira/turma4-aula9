@@ -1,0 +1,38 @@
+{
+  "uid": "aula9-trace",
+  "title": "Aula 9 — Trace de um Pix",
+  "tags": ["techpix", "aula9", "tracing"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "time": { "from": "now-1h", "to": "now" },
+  "templating": {
+    "list": [
+      {
+        "type": "textbox",
+        "name": "traceid",
+        "label": "Trace ID (cole aqui o que você achou nos logs)",
+        "query": "4f2a9c01d7e3b8a64f2a9c01d7e3b8a6",
+        "current": { "text": "4f2a9c01d7e3b8a64f2a9c01d7e3b8a6", "value": "4f2a9c01d7e3b8a64f2a9c01d7e3b8a6" }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1, "type": "text", "title": "",
+      "gridPos": { "h": 4, "w": 24, "x": 0, "y": 0 },
+      "options": { "mode": "markdown", "content": "# 🧵 Trace distribuído por Trace ID\nCole no campo **Trace ID** (acima) o id que você encontrou nos logs (`scripts/investigate-logs.sh PIX-928371`) e o waterfall de spans aparece abaixo — cada barra é um passo, em qual serviço, com qual duração. **Incidente 1:** `4f2a9c01d7e3b8a64f2a9c01d7e3b8a6` (repare no span `pool.acquire` de 2,9s dentro do `psp.transfer` em TIMEOUT). **Incidente 2:** `9b1cf3aa21e07c449b1cf3aa21e07c44` (`fraud.check` domina, com `rule.ml-risk` de 2,4s). Para buscar sem saber o id: [Explore → Tempo](/explore?schemaVersion=1&panes=%7B%22t1%22:%7B%22datasource%22:%22tempo%22,%22queries%22:%5B%7B%22refId%22:%22A%22,%22queryType%22:%22traceqlSearch%22%7D%5D%7D%7D&orgId=1) e filtre por serviço. Se o trace não aparecer: `python scripts/aula9/lab9.py traces` reingere." }
+    },
+    {
+      "id": 2, "type": "traces", "title": "Waterfall do trace ${traceid}",
+      "datasource": { "type": "tempo", "uid": "tempo" },
+      "gridPos": { "h": 18, "w": 24, "x": 0, "y": 4 },
+      "targets": [ { "refId": "A", "query": "${traceid}", "queryType": "traceql" } ],
+      "options": {}
+    },
+    {
+      "id": 3, "type": "text", "title": "trace_id × correlation_id — e onde o OpenTelemetry entra",
+      "gridPos": { "h": 6, "w": 24, "x": 0, "y": 22 },
+      "options": { "mode": "markdown", "content": "**correlation_id** é um identificador que *nós* criamos e logamos — costura **logs** entre serviços. **trace_id** é propagado automaticamente (header W3C `traceparent`) pelo **OpenTelemetry**, que também mede cada span e exporta para um backend como este (**Tempo**) ou Jaeger. Em produção, você não \"roda um script\": o app instrumentado exporta sozinho, e o caminho é *métrica estranha → exemplar → trace → span culpado → logs daquele serviço*. Aqui o simulador do lab ingere os traces do incidente via OTLP — o mesmo protocolo que o app real usaria." }
+    }
+  ]
+}

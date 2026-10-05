@@ -90,7 +90,7 @@ def ensure_compose():
     if legacy:
         run(["docker", "start"] + legacy, 120)
     rc, out = run(["docker", "compose", "--profile", "observability", "--profile", "auth",
-                   "up", "-d", "postgres", "kafka", "prometheus", "grafana", "keycloak", "opa"], 300)
+                   "up", "-d", "postgres", "kafka", "prometheus", "grafana", "tempo", "keycloak", "opa"], 300)
     if rc != 0 and "already in use" not in out:
         print("   AVISO compose: " + out.strip().splitlines()[-1][:160])
     for c in ("techpix-postgres", "techpix-kafka", "techpix-prometheus",
@@ -204,6 +204,7 @@ def summary():
         ("Keycloak", "http://localhost:8180/realms/techpix/.well-known/openid-configuration", "http://localhost:8180"),
         ("OPA (policy)", "http://localhost:8181/health", "http://localhost:8181/v1/data/techpix/authz"),
         ("Synthetic monitor", "http://localhost:8098/metrics", "http://localhost:8098/status"),
+        ("Tempo (traces)", "http://localhost:3200/ready", "http://localhost:3000/d/aula9-trace"),
         ("Tekton Dashboard", "http://localhost:9097", "http://localhost:9097"),
     ]
     falhas = 0

@@ -141,6 +141,20 @@ services:
     # Profile proprio para nao pesar o --profile app dos labs antigos.
     profiles: ["auth"]
 
+  tempo:
+    # Aula 9: backend de distributed tracing. O simulador do lab envia os traces
+    # do incidente via OTLP; o Grafana consulta por trace_id (dashboard "Trace de um Pix").
+    image: grafana/tempo:2.6.1
+    container_name: techpix-tempo
+    command: ["-config.file=/etc/tempo.yml"]
+    volumes:
+      - ./docker/tempo/tempo.yml:/etc/tempo.yml:ro
+      - techpix-tempo-data:/var/tempo
+    ports:
+      - "3200:3200"   # API de consulta (Grafana)
+      - "4318:4318"   # OTLP HTTP (ingestao)
+    profiles: ["observability"]
+
   opa:
     # Aula 8: policy as code. Servidor de decisao com as politicas da Tech Pix;
     # os servicos perguntam "posso?" via POST /v1/data/techpix/authz.
@@ -185,3 +199,4 @@ services:
 
 volumes:
   techpix-pgdata:
+  techpix-tempo-data:

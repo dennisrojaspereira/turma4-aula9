@@ -26,6 +26,7 @@ Isso sobe o "ambiente de produção" do lab na porta 8080 e reinicia o estado do
 |---|---|
 | Painel do instrutor (botões de cada fase) | <http://localhost:8099> |
 | Dashboard do incidente — "Aula 9 — Cadê o Pix?" | <http://localhost:3000/d/aula9> |
+| Trace de um Pix (cole o trace_id, veja os spans) | <http://localhost:3000/d/aula9-trace> |
 | Visão Geral (todos os dashboards + synthetic) | <http://localhost:3000/d/techpix-home> |
 | Health do sistema | <http://localhost:8080/actuator/health> |
 
@@ -140,6 +141,8 @@ scripts/find-correlation.sh abc123
 ```bash
 scripts/investigate-trace.sh PIX-928371
 ```
+
+E no Grafana, do jeito que seria em produção: abra **<http://localhost:3000/d/aula9-trace>**, cole o `trace_id` que você anotou na Fase 2 e veja o waterfall interativo (backend: Tempo, ingestão via OTLP — clique nos spans para ver os atributos).
 
 **Perguntas.**
 

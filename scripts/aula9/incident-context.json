@@ -6,7 +6,7 @@
     "customer_report": "Cliente informa que realizou um Pix de R$ 250,00. O valor saiu da conta, mas o destinatario nao recebeu.",
     "transaction_id": "PIX-928371",
     "correlation_id": "abc123",
-    "trace_id": "4f2a9c01d7e3b8a6",
+    "trace_id": "4f2a9c01d7e3b8a64f2a9c01d7e3b8a6",
     "amount": 250.00,
     "approx_time": "2026-10-02T21:03"
   },
@@ -37,7 +37,7 @@
     "postgres": "normal (14/50 conexoes)"
   },
   "trace_summary": {
-    "trace_id": "4f2a9c01d7e3b8a6",
+    "trace_id": "4f2a9c01d7e3b8a64f2a9c01d7e3b8a6",
     "total_ms": 5212,
     "spans": [
       {"name": "fraud.check", "service": "fraud-service", "ms": 40, "status": "OK"},

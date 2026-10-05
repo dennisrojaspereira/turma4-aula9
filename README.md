@@ -153,7 +153,7 @@ python scripts/sobe-tudo.py                  # Docker, compose, kind, port-forwa
 
 ### Dashboards do Grafana
 
-`http://localhost:3000` abre a **Visão Geral** (lista de todos os dashboards + status dos targets). Pastas em `/dashboards`: **Aula 7** (Payment vs Fraud), **Serviços — RED & Golden Signals** (Monolith e Fraud Service: Rate/Errors/Duration, pool HikariCP, eventos e idempotência, CPU/heap) e **Aula 9 — Observabilidade** (o incidente "Cadê o Pix?" reencenado em loop de 20 min, com os conceitos da aula nos painéis).
+`http://localhost:3000` abre a **Visão Geral** (lista de todos os dashboards + status dos targets). Pastas em `/dashboards`: **Aula 7** (Payment vs Fraud), **Serviços — RED & Golden Signals** (Monolith e Fraud Service: Rate/Errors/Duration, pool HikariCP, eventos e idempotência, CPU/heap) e **Aula 9 — Observabilidade** (o incidente "Cadê o Pix?" reencenado em loop de 20 min, com os conceitos da aula nos painéis, e o **"Trace de um Pix"**: cole um `trace_id` e explore o waterfall de spans no Grafana Tempo, ingerido via OTLP).
 
 ### Aula 9 — Observabilidade e Resiliência (laboratório final "Cadê o Pix?")
 

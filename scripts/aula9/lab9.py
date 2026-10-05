@@ -52,7 +52,7 @@ INITIAL_STATE = {
             "created_at": "2026-10-02T21:03:01",
             "status": "UNKNOWN",
             "correlation_id": "abc123",
-            "trace_id": "4f2a9c01d7e3b8a6",
+            "trace_id": "4f2a9c01d7e3b8a64f2a9c01d7e3b8a6",
             "ledger": "DEBITED",
             "psp_truth": "COMPLETED",
             "psp_e2e_id": "E20261002210300017",
@@ -67,7 +67,7 @@ INITIAL_STATE = {
             "created_at": "2026-10-02T21:41:02",
             "status": "APPROVED",
             "correlation_id": "def456",
-            "trace_id": "9b1cf3aa21e07c44",
+            "trace_id": "9b1cf3aa21e07c449b1cf3aa21e07c44",
             "ledger": "DEBITED",
             "psp_truth": "COMPLETED",
             "psp_e2e_id": "E20261002214100442",
@@ -130,37 +130,37 @@ LOGS_1 = [
 
     # a transacao do chamado: PIX-928371
     {"ts": "2026-10-02T21:03:01.102", "service": "payment-service", "level": "INFO",
-     "transaction_id": "PIX-928371", "correlation_id": "abc123", "trace_id": "4f2a9c01d7e3b8a6",
+     "transaction_id": "PIX-928371", "correlation_id": "abc123", "trace_id": "4f2a9c01d7e3b8a64f2a9c01d7e3b8a6",
      "message": "pagamento recebido", "status": "PROCESSING", "amount": 250.00,
      "payer_account": "ACC-1001", "payee_account": "ACC-2044"},
     {"ts": "2026-10-02T21:03:01.311", "service": "fraud-service", "level": "INFO",
-     "transaction_id": "PIX-928371", "correlation_id": "abc123", "trace_id": "4f2a9c01d7e3b8a6",
+     "transaction_id": "PIX-928371", "correlation_id": "abc123", "trace_id": "4f2a9c01d7e3b8a64f2a9c01d7e3b8a6",
      "message": "avaliacao concluida", "decision": "APPROVED", "score": 12,
      "rules_evaluated": 17, "duration_ms": 40},
     {"ts": "2026-10-02T21:03:02.040", "service": "ledger", "level": "INFO",
-     "transaction_id": "PIX-928371", "correlation_id": "abc123", "trace_id": "4f2a9c01d7e3b8a6",
+     "transaction_id": "PIX-928371", "correlation_id": "abc123", "trace_id": "4f2a9c01d7e3b8a64f2a9c01d7e3b8a6",
      "message": "lancamento registrado", "entry": "DEBIT", "account": "ACC-1001",
      "amount": 250.00, "status": "DEBITED"},
     {"ts": "2026-10-02T21:03:03.012", "service": "psp-adapter", "level": "WARN",
-     "transaction_id": "PIX-928371", "correlation_id": "abc123", "trace_id": "4f2a9c01d7e3b8a6",
+     "transaction_id": "PIX-928371", "correlation_id": "abc123", "trace_id": "4f2a9c01d7e3b8a64f2a9c01d7e3b8a6",
      "message": "pool de conexoes esgotado, requisicao aguardando", "pool_active": 2, "pool_max": 2,
      "pool_pending": 14, "wait_ms": 2874},
     {"ts": "2026-10-02T21:03:08.021", "service": "psp-adapter", "level": "ERROR",
-     "transaction_id": "PIX-928371", "correlation_id": "abc123", "trace_id": "4f2a9c01d7e3b8a6",
+     "transaction_id": "PIX-928371", "correlation_id": "abc123", "trace_id": "4f2a9c01d7e3b8a64f2a9c01d7e3b8a6",
      "message": "timeout aguardando resposta do PSP", "timeout_ms": 5000,
      "error": "ReadTimeout", "psp_e2e_id": None},
     {"ts": "2026-10-02T21:03:08.034", "service": "payment-service", "level": "WARN",
-     "transaction_id": "PIX-928371", "correlation_id": "abc123", "trace_id": "4f2a9c01d7e3b8a6",
+     "transaction_id": "PIX-928371", "correlation_id": "abc123", "trace_id": "4f2a9c01d7e3b8a64f2a9c01d7e3b8a6",
      "message": "sem confirmacao do PSP; estado indeterminado", "status": "UNKNOWN",
      "reason": "psp-timeout"},
     {"ts": "2026-10-02T21:03:08.102", "service": "notification-service", "level": "INFO",
-     "transaction_id": "PIX-928371", "correlation_id": "abc123", "trace_id": "4f2a9c01d7e3b8a6",
+     "transaction_id": "PIX-928371", "correlation_id": "abc123", "trace_id": "4f2a9c01d7e3b8a64f2a9c01d7e3b8a6",
      "message": "notificacao adiada ate estado final", "channel": "push",
      "customer_name": "Carlos Andrade", "cpf": "123.456.789-09"},
 ]
 
 TRACE_1 = r"""
-trace_id: 4f2a9c01d7e3b8a6        (transaction_id=PIX-928371, correlation_id=abc123)
+trace_id: 4f2a9c01d7e3b8a64f2a9c01d7e3b8a6        (transaction_id=PIX-928371, correlation_id=abc123)
 
 POST /payments ................................. 5212 ms   payment-service
   |- fraud.check ...............................   40 ms   fraud-service     OK
@@ -223,23 +223,23 @@ DLQ_MESSAGE = {
 
 LOGS_2 = [
     {"ts": "2026-10-02T21:41:02.090", "service": "payment-service", "level": "INFO",
-     "transaction_id": "PIX-554219", "correlation_id": "def456", "trace_id": "9b1cf3aa21e07c44",
+     "transaction_id": "PIX-554219", "correlation_id": "def456", "trace_id": "9b1cf3aa21e07c449b1cf3aa21e07c44",
      "message": "pagamento recebido", "status": "PROCESSING", "amount": 180.00,
      "payer_account": "ACC-3310", "payee_account": "ACC-1288"},
     {"ts": "2026-10-02T21:41:04.710", "service": "fraud-service", "level": "WARN",
-     "transaction_id": "PIX-554219", "correlation_id": "def456", "trace_id": "9b1cf3aa21e07c44",
+     "transaction_id": "PIX-554219", "correlation_id": "def456", "trace_id": "9b1cf3aa21e07c449b1cf3aa21e07c44",
      "message": "avaliacao lenta", "decision": "APPROVED", "score": 8,
      "rules_evaluated": 17, "ml_iterations": 2000000, "duration_ms": 2612},
     {"ts": "2026-10-02T21:41:04.760", "service": "ledger", "level": "INFO",
-     "transaction_id": "PIX-554219", "correlation_id": "def456", "trace_id": "9b1cf3aa21e07c44",
+     "transaction_id": "PIX-554219", "correlation_id": "def456", "trace_id": "9b1cf3aa21e07c449b1cf3aa21e07c44",
      "message": "lancamento registrado", "entry": "DEBIT", "account": "ACC-3310",
      "amount": 180.00, "status": "DEBITED"},
     {"ts": "2026-10-02T21:41:05.020", "service": "psp-adapter", "level": "INFO",
-     "transaction_id": "PIX-554219", "correlation_id": "def456", "trace_id": "9b1cf3aa21e07c44",
+     "transaction_id": "PIX-554219", "correlation_id": "def456", "trace_id": "9b1cf3aa21e07c449b1cf3aa21e07c44",
      "message": "transferencia confirmada pelo PSP", "duration_ms": 236,
      "pool_active": 3, "pool_max": 20},
     {"ts": "2026-10-02T21:41:05.980", "service": "payment-service", "level": "INFO",
-     "transaction_id": "PIX-554219", "correlation_id": "def456", "trace_id": "9b1cf3aa21e07c44",
+     "transaction_id": "PIX-554219", "correlation_id": "def456", "trace_id": "9b1cf3aa21e07c449b1cf3aa21e07c44",
      "message": "pagamento concluido", "status": "APPROVED", "total_ms": 3890},
     {"ts": "2026-10-02T21:41:06.100", "service": "fraud-service", "level": "WARN",
      "transaction_id": None, "correlation_id": None, "trace_id": None,
@@ -251,7 +251,7 @@ LOGS_2 = [
 ]
 
 TRACE_2 = r"""
-trace_id: 9b1cf3aa21e07c44        (transaction_id=PIX-554219, correlation_id=def456)
+trace_id: 9b1cf3aa21e07c449b1cf3aa21e07c44        (transaction_id=PIX-554219, correlation_id=def456)
 
 POST /payments ................................. 3940 ms   payment-service
   |- fraud.check ............................... 2612 ms   fraud-service     OK (lento)
@@ -289,6 +289,94 @@ def dataset(state):
                 "tx": "PIX-554219"}
     return {"logs": LOGS_1, "trace": TRACE_1, "metrics": METRICS_1,
             "tx": "PIX-928371"}
+
+
+# ---------------------------------------------------------------------------
+# Traces no Tempo: o simulador ingere os traces do incidente via OTLP, e o
+# Grafana consulta por trace_id (dashboard "Aula 9 - Trace de um Pix").
+# ---------------------------------------------------------------------------
+
+TEMPO_OTLP = os.environ.get("TECHPIX_TEMPO_OTLP", "http://localhost:4318/v1/traces")
+
+# (service, name, parent_idx, offset_ms, dur_ms, error, attrs)
+SPANS_1 = [
+    ("payment-service", "POST /payments", None, 0, 5212, True,
+     {"transaction_id": "PIX-928371", "correlation_id": "abc123", "http.method": "POST"}),
+    ("fraud-service", "fraud.check", 0, 40, 40, False,
+     {"decision": "APPROVED", "score": "12", "rules_evaluated": "17"}),
+    ("ledger", "ledger.debit", 0, 150, 21, False,
+     {"entry": "DEBIT", "account": "ACC-1001", "amount": "250.00"}),
+    ("psp-adapter", "psp.transfer", 0, 205, 5003, True,
+     {"error": "ReadTimeout", "timeout_ms": "5000"}),
+    ("psp-adapter", "pool.acquire", 3, 205, 2874, False,
+     {"pool_active": "2", "pool_max": "2", "pool_pending": "14",
+      "note": "esperando conexao livre: a pista da causa raiz"}),
+    ("psp-adapter", "http.post /transfers", 3, 3079, 2101, True,
+     {"note": "sem resposta; cancelado aos 5000ms"}),
+]
+
+SPANS_2 = [
+    ("payment-service", "POST /payments", None, 0, 3940, False,
+     {"transaction_id": "PIX-554219", "correlation_id": "def456", "http.method": "POST"}),
+    ("fraud-service", "fraud.check", 0, 60, 2612, False,
+     {"decision": "APPROVED", "score": "8", "rules_evaluated": "17",
+      "ml_iterations": "2000000", "note": "lento: perfil HEAVY"}),
+    ("fraud-service", "rule.ml-risk", 1, 180, 2458, False,
+     {"ml_iterations": "2000000"}),
+    ("ledger", "ledger.debit", 0, 2700, 19, False,
+     {"entry": "DEBIT", "account": "ACC-3310", "amount": "180.00"}),
+    ("psp-adapter", "psp.transfer", 0, 2740, 236, False,
+     {"pool_active": "3", "pool_max": "20"}),
+]
+
+
+def _otlp_payload(trace_id, spans, anchor_ns, tag):
+    by_service = {}
+    for i, (svc, name, parent, off, dur, err, attrs) in enumerate(spans):
+        span = {
+            "traceId": trace_id,
+            "spanId": "%s00000000000%03x" % (tag, i),
+            "name": name,
+            "kind": 2 if parent is None else 1,  # SERVER / INTERNAL
+            "startTimeUnixNano": str(anchor_ns + off * 1_000_000),
+            "endTimeUnixNano": str(anchor_ns + (off + dur) * 1_000_000),
+            "attributes": [{"key": k, "value": {"stringValue": str(v)}}
+                           for k, v in attrs.items()],
+        }
+        if parent is not None:
+            span["parentSpanId"] = "%s00000000000%03x" % (tag, parent)
+        if err:
+            span["status"] = {"code": 2, "message": "timeout" if parent is not None else "psp timeout"}
+        by_service.setdefault(svc, []).append(span)
+    return {"resourceSpans": [
+        {"resource": {"attributes": [{"key": "service.name", "value": {"stringValue": svc}}]},
+         "scopeSpans": [{"scope": {"name": "techpix-lab9"}, "spans": sp}]}
+        for svc, sp in by_service.items()]}
+
+
+def push_traces(quiet=False):
+    """Ingere os dois traces do lab no Tempo (idempotente; ancora perto de agora)."""
+    anchor = (int(time.time()) - 600) * 1_000_000_000
+    sent = 0
+    for trace_id, spans, tag in (
+            ("4f2a9c01d7e3b8a64f2a9c01d7e3b8a6", SPANS_1, "a1"),
+            ("9b1cf3aa21e07c449b1cf3aa21e07c44", SPANS_2, "b2")):
+        body = json.dumps(_otlp_payload(trace_id, spans, anchor, tag)).encode()
+        req = urllib.request.Request(TEMPO_OTLP, data=body, method="POST",
+                                     headers={"Content-Type": "application/json"})
+        try:
+            with urllib.request.urlopen(req, timeout=5):
+                sent += 1
+        except (urllib.error.URLError, OSError) as e:
+            if not quiet:
+                print("Tempo fora do ar em %s (%s)." % (TEMPO_OTLP, e))
+                print("Suba com: docker compose --profile observability up -d tempo")
+            return False
+    if not quiet:
+        print("%d traces do incidente ingeridos no Tempo." % sent)
+        print("Grafana > dashboard 'Aula 9 - Trace de um Pix', ou Explore > Tempo,")
+        print("e cole: 4f2a9c01d7e3b8a64f2a9c01d7e3b8a6")
+    return True
 
 
 # ---------------------------------------------------------------------------
@@ -796,10 +884,14 @@ def main():
         cmd_serve()
     elif cmd == "up":
         cmd_up()
+        push_traces(quiet=True)
     elif cmd == "stop":
         cmd_stop()
     elif cmd == "reset":
         cmd_reset()
+        push_traces(quiet=True)
+    elif cmd == "traces":
+        push_traces()
     elif cmd == "status":
         cmd_status(state)
     elif cmd == "logs":

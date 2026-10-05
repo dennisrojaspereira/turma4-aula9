@@ -147,6 +147,8 @@ Transição:
 
 **Evidência esperada:** `scripts/investigate-trace.sh PIX-928371` → `POST /payments` 5212 ms; `psp.transfer` 5003 ms TIMEOUT, com filhos `pool.acquire` **2874 ms** e `http.post` 2101 ms sem resposta.
 
+**Versão visual:** [dashboard "Trace de um Pix"](http://localhost:3000/d/aula9-trace) — cole o trace_id (`4f2a9c01d7e3b8a64f2a9c01d7e3b8a6`) e explore o waterfall no Tempo; clique no span `pool.acquire` para mostrar os atributos (`pool_max=2`, `pool_pending=14`). O do incidente 2 é `9b1cf3aa21e07c449b1cf3aa21e07c44`. Se o trace sumiu (retenção/reinício do Tempo): `python scripts/aula9/lab9.py traces` reingere em 1s.
+
 **Onde pausar:** no `pool.acquire`. É a pista central do incidente.
 
 ```text
