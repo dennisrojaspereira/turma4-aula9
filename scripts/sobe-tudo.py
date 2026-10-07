@@ -85,7 +85,7 @@ def ensure_compose():
     # containers antigos podem pertencer a outro nome de projeto compose
     # (a pasta ja se chamou aula7/aula8); docker start neles evita conflito de nome.
     legacy = [c for c in ("techpix-postgres", "techpix-kafka", "techpix-prometheus",
-                          "techpix-grafana", "techpix-keycloak", "techpix-opa")
+                          "techpix-grafana", "techpix-keycloak", "techpix-opa", "techpix-tempo")
               if container_exists(c) and not container_running(c)]
     if legacy:
         run(["docker", "start"] + legacy, 120)
