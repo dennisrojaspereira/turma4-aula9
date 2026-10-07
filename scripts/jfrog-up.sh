@@ -48,6 +48,7 @@ else
     -e JF_SHARED_DATABASE_URL="jdbc:postgresql://host.docker.internal:5432/artifactory" \
     -e JF_SHARED_DATABASE_USERNAME=artifactory \
     -e JF_SHARED_DATABASE_PASSWORD=artifactory \
+    -e JF_JFCONNECT_ENABLED=false \
     -v techpix-jfrog-data:/var/opt/jfrog/artifactory \
     releases-docker.jfrog.io/jfrog/artifactory-oss:latest >/dev/null
 fi
